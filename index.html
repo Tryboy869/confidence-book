@@ -49,6 +49,7 @@
       background: linear-gradient(135deg, var(--accent-hope), var(--accent-pain));
       -webkit-background-clip: text;
       -webkit-text-fill-color: transparent;
+      background-clip: text;
     }
     
     .tagline {
@@ -56,7 +57,44 @@
       font-size: 1rem;
     }
     
-    /* ========== NOTIFICATIONS BELL ========== */
+    /* ========== AUTH BUTTONS ========== */
+    .auth-buttons {
+      position: absolute;
+      top: 40px;
+      left: 20px;
+      display: flex;
+      gap: 10px;
+    }
+    
+    .auth-btn {
+      background: var(--bg-card);
+      border: 1px solid rgba(255,255,255,0.2);
+      color: var(--text-primary);
+      padding: 8px 16px;
+      border-radius: 8px;
+      cursor: pointer;
+      font-size: 0.9rem;
+      transition: all 0.2s;
+    }
+    
+    .auth-btn:hover {
+      background: var(--accent-hope);
+      border-color: var(--accent-hope);
+    }
+    
+    /* ========== USER INFO ========== */
+    .user-info {
+      position: absolute;
+      top: 40px;
+      left: 20px;
+      background: var(--bg-card);
+      padding: 8px 16px;
+      border-radius: 8px;
+      font-size: 0.9rem;
+      color: var(--text-secondary);
+    }
+    
+    /* ========== NOTIFICATIONS ========== */
     .notification-bell {
       position: absolute;
       top: 40px;
@@ -64,6 +102,7 @@
       cursor: pointer;
       font-size: 1.5rem;
       position: relative;
+      user-select: none;
     }
     
     .notification-badge {
@@ -76,7 +115,7 @@
       width: 20px;
       height: 20px;
       font-size: 0.7rem;
-      display: flex;
+      display: none;
       align-items: center;
       justify-content: center;
       font-weight: bold;
@@ -129,6 +168,68 @@
       cursor: pointer;
       margin-top: 10px;
       width: 100%;
+    }
+    
+    /* ========== MODAL AUTH ========== */
+    .modal {
+      display: none;
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: rgba(0,0,0,0.8);
+      z-index: 2000;
+      align-items: center;
+      justify-content: center;
+    }
+    
+    .modal.open {
+      display: flex;
+    }
+    
+    .modal-content {
+      background: var(--bg-card);
+      padding: 40px;
+      border-radius: 16px;
+      max-width: 400px;
+      width: 90%;
+    }
+    
+    .modal input {
+      width: 100%;
+      padding: 12px;
+      background: var(--bg-primary);
+      border: 1px solid rgba(255,255,255,0.1);
+      color: var(--text-primary);
+      border-radius: 8px;
+      font-size: 1rem;
+      margin-bottom: 15px;
+    }
+    
+    .modal input:focus {
+      outline: none;
+      border-color: var(--accent-hope);
+    }
+    
+    .modal button {
+      width: 100%;
+      background: var(--accent-hope);
+      color: white;
+      border: none;
+      padding: 12px;
+      border-radius: 8px;
+      cursor: pointer;
+      font-size: 1rem;
+      margin-bottom: 10px;
+    }
+    
+    .modal button:hover {
+      opacity: 0.9;
+    }
+    
+    .modal .cancel-btn {
+      background: rgba(255,255,255,0.1);
     }
     
     .chapters {
@@ -288,12 +389,34 @@
       color: var(--text-secondary);
     }
     
-    .empty-state svg {
-      width: 120px;
-      height: 120px;
-      margin-bottom: 20px;
-      opacity: 0.3;
+    /* ========== DEBUG CONSOLE ========== */
+    .debug-console {
+      position: fixed;
+      bottom: 0;
+      left: 0;
+      width: 100%;
+      max-height: 200px;
+      background: #1a1a1a;
+      border-top: 2px solid var(--accent-hope);
+      overflow-y: auto;
+      font-family: monospace;
+      font-size: 0.8rem;
+      padding: 10px;
+      display: none;
+      z-index: 9999;
     }
+    
+    .debug-console.open {
+      display: block;
+    }
+    
+    .debug-line {
+      padding: 2px 0;
+    }
+    
+    .debug-line.success { color: #70d6a3; }
+    .debug-line.error { color: #ff5555; }
+    .debug-line.info { color: #6b8cff; }
     
     @media (max-width: 600px) {
       h1 {
@@ -313,8 +436,11 @@
         right: -100%;
       }
       
-      .notification-bell {
-        right: 10px;
+      .notification-bell, .user-info, .auth-buttons {
+        position: static;
+        margin: 10px auto;
+        display: flex;
+        justify-content: center;
       }
     }
   </style>
@@ -325,12 +451,29 @@
     <h1>Confidence Book</h1>
     <p class="tagline">Ton refuge émotionnel anonyme</p>
     
+    <!-- Auth Buttons OU User Info -->
+    <div id="authContainer"></div>
+    
     <!-- Notification Bell -->
-    <div class="notification-bell" onclick="App.toggleNotifications()">
+    <div class="notification-bell" id="notificationBell">
       🔔
-      <span class="notification-badge" id="notificationBadge" style="display: none;">0</span>
+      <span class="notification-badge" id="notificationBadge">0</span>
     </div>
   </header>
+
+  <!-- Auth Modal -->
+  <div class="modal" id="authModal">
+    <div class="modal-content">
+      <h2 id="modalTitle">S'inscrire</h2>
+      <p style="color: var(--text-secondary); margin-bottom: 20px;">
+        Crée ton compte anonyme pour commencer à partager
+      </p>
+      <input type="email" id="emailInput" placeholder="Email (pour te reconnecter)" />
+      <input type="number" id="ageInput" placeholder="Âge (18+ requis)" min="18" max="120" />
+      <button id="authSubmitBtn">Créer mon compte</button>
+      <button class="cancel-btn" id="authCancelBtn">Annuler</button>
+    </div>
+  </div>
 
   <!-- Notification Panel -->
   <div class="notification-panel" id="notificationPanel">
@@ -363,7 +506,7 @@
   </section>
 
   <!-- Formulaire publication -->
-  <section class="publish-form">
+  <section class="publish-form" id="publishForm">
     <h2 style="margin-bottom: 20px;">Partage ton histoire</h2>
     <textarea 
       id="confidenceText" 
@@ -377,7 +520,7 @@
       <option value="espoir">🤝 Espoir</option>
     </select>
     
-    <button class="submit-btn" onclick="App.publishConfidence()">
+    <button class="submit-btn" id="publishBtn">
       Partager anonymement
     </button>
   </section>
@@ -385,34 +528,82 @@
   <!-- Liste des confidences -->
   <section id="confidencesList"></section>
 
+  <!-- Debug Console -->
+  <div class="debug-console" id="debugConsole"></div>
+
   <script>
+    // ========== DEBUG LOGGER ==========
+    const Debug = {
+      enabled: true,
+      log(message, type = 'info') {
+        if (!this.enabled) return;
+        
+        console.log(`[${type.toUpperCase()}]`, message);
+        
+        const console = document.getElementById('debugConsole');
+        const line = document.createElement('div');
+        line.className = `debug-line ${type}`;
+        line.textContent = `[${new Date().toLocaleTimeString()}] ${message}`;
+        console.appendChild(line);
+        console.scrollTop = console.scrollHeight;
+      },
+      
+      success(msg) { this.log(msg, 'success'); },
+      error(msg) { this.log(msg, 'error'); },
+      info(msg) { this.log(msg, 'info'); }
+    };
+    
+    // Toggle debug console avec Ctrl+D
+    document.addEventListener('keydown', (e) => {
+      if (e.ctrlKey && e.key === 'd') {
+        e.preventDefault();
+        document.getElementById('debugConsole').classList.toggle('open');
+      }
+    });
+
+    // ========== MAIN APP ==========
     const App = {
       state: {
+        user: null,
         confidences: [],
         notifications: [],
         currentChapter: 'all',
-        userId: localStorage.getItem('cb_user_id') || this.generateUserId(),
         notificationPanelOpen: false
       },
       
-      generateUserId() {
-        const id = 'user_' + Math.random().toString(36).substr(2, 9);
-        localStorage.setItem('cb_user_id', id);
-        return id;
-      },
-      
       async init() {
-        this.setupEventListeners();
-        await this.loadConfidences();
-        await this.loadNotifications();
+        Debug.info('🚀 Initializing Confidence Book...');
         
-        // Poll notifications toutes les 30s
-        setInterval(() => this.loadNotifications(), 30000);
+        try {
+          // Charger utilisateur depuis localStorage
+          const savedUser = localStorage.getItem('cb_user');
+          if (savedUser) {
+            this.state.user = JSON.parse(savedUser);
+            Debug.success(`✅ User loaded: ${this.state.user.id}`);
+          }
+          
+          this.renderAuthState();
+          this.setupEventListeners();
+          await this.loadConfidences();
+          
+          if (this.state.user) {
+            await this.loadNotifications();
+            setInterval(() => this.loadNotifications(), 30000);
+          }
+          
+          Debug.success('✅ App initialized successfully');
+        } catch (error) {
+          Debug.error(`❌ Init error: ${error.message}`);
+        }
       },
       
       setupEventListeners() {
+        Debug.info('Setting up event listeners...');
+        
+        // Chapitres
         document.querySelectorAll('.chapter-btn').forEach(btn => {
           btn.addEventListener('click', () => {
+            Debug.info(`Chapter selected: ${btn.dataset.chapter}`);
             document.querySelectorAll('.chapter-btn').forEach(b => b.classList.remove('active'));
             btn.classList.add('active');
             this.state.currentChapter = btn.dataset.chapter;
@@ -420,24 +611,101 @@
           });
         });
         
-        // Fermer panel si clic dehors
-        document.addEventListener('click', (e) => {
-          const panel = document.getElementById('notificationPanel');
-          const bell = document.querySelector('.notification-bell');
-          
-          if (this.state.notificationPanelOpen && 
-              !panel.contains(e.target) && 
-              !bell.contains(e.target)) {
-            this.toggleNotifications();
-          }
-        });
+        // Publish button
+        document.getElementById('publishBtn').addEventListener('click', () => this.publishConfidence());
+        
+        // Notification bell
+        document.getElementById('notificationBell').addEventListener('click', () => this.toggleNotifications());
+        
+        // Auth modal
+        document.getElementById('authSubmitBtn').addEventListener('click', () => this.handleAuth());
+        document.getElementById('authCancelBtn').addEventListener('click', () => this.closeAuthModal());
+        
+        Debug.success('✅ Event listeners configured');
+      },
+      
+      // ========== AUTH ==========
+      renderAuthState() {
+        const container = document.getElementById('authContainer');
+        
+        if (this.state.user) {
+          container.innerHTML = `
+            <div class="user-info">
+              👤 Connecté(e) | <span style="cursor: pointer; color: var(--accent-pain);" onclick="App.logout()">Déconnexion</span>
+            </div>
+          `;
+        } else {
+          container.innerHTML = `
+            <div class="auth-buttons">
+              <button class="auth-btn" onclick="App.openAuthModal()">S'inscrire</button>
+            </div>
+          `;
+        }
+      },
+      
+      openAuthModal() {
+        Debug.info('Opening auth modal');
+        document.getElementById('authModal').classList.add('open');
+      },
+      
+      closeAuthModal() {
+        document.getElementById('authModal').classList.remove('open');
+        document.getElementById('emailInput').value = '';
+        document.getElementById('ageInput').value = '';
+      },
+      
+      async handleAuth() {
+        const email = document.getElementById('emailInput').value.trim();
+        const age = parseInt(document.getElementById('ageInput').value);
+        
+        if (!email || !email.includes('@')) {
+          alert('Email invalide');
+          return;
+        }
+        
+        if (!age || age < 18) {
+          alert('Tu dois avoir au moins 18 ans');
+          return;
+        }
+        
+        Debug.info(`Creating user: ${email}, age: ${age}`);
+        
+        const user = {
+          id: 'user_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9),
+          email,
+          age,
+          createdAt: new Date().toISOString()
+        };
+        
+        this.state.user = user;
+        localStorage.setItem('cb_user', JSON.stringify(user));
+        
+        this.closeAuthModal();
+        this.renderAuthState();
+        
+        Debug.success(`✅ User created: ${user.id}`);
+        alert('✅ Compte créé ! Tu peux maintenant partager tes confidences.');
+      },
+      
+      logout() {
+        if (!confirm('Es-tu sûr(e) de vouloir te déconnecter ?')) return;
+        
+        Debug.info('Logging out user');
+        localStorage.removeItem('cb_user');
+        this.state.user = null;
+        this.renderAuthState();
+        alert('👋 À bientôt !');
       },
       
       // ========== NOTIFICATIONS ==========
       async loadNotifications() {
+        if (!this.state.user) return;
+        
         try {
+          Debug.info('Loading notifications...');
+          
           const response = await fetch('/api/notifications', {
-            headers: { 'X-User-Id': this.state.userId }
+            headers: { 'X-User-Id': this.state.user.id }
           });
           
           const data = await response.json();
@@ -445,12 +713,10 @@
           if (data.success) {
             this.state.notifications = data.data;
             this.updateNotificationBadge();
-            if (this.state.notificationPanelOpen) {
-              this.renderNotifications();
-            }
+            Debug.success(`✅ Loaded ${data.data.length} notifications`);
           }
         } catch (error) {
-          console.error('Erreur chargement notifications:', error);
+          Debug.error(`❌ Load notifications error: ${error.message}`);
         }
       },
       
@@ -467,12 +733,18 @@
       },
       
       toggleNotifications() {
+        if (!this.state.user) {
+          alert('Inscris-toi pour voir tes notifications');
+          return;
+        }
+        
         const panel = document.getElementById('notificationPanel');
         this.state.notificationPanelOpen = !this.state.notificationPanelOpen;
         
         if (this.state.notificationPanelOpen) {
           panel.classList.add('open');
           this.renderNotifications();
+          Debug.info('Notification panel opened');
         } else {
           panel.classList.remove('open');
         }
@@ -499,20 +771,24 @@
       
       async markNotificationRead(notificationId) {
         try {
+          Debug.info(`Marking notification as read: ${notificationId}`);
+          
           await fetch(`/api/notifications/${notificationId}/read`, {
             method: 'POST',
-            headers: { 'X-User-Id': this.state.userId }
+            headers: { 'X-User-Id': this.state.user.id }
           });
           
           await this.loadNotifications();
+          Debug.success('✅ Notification marked as read');
         } catch (error) {
-          console.error('Erreur marquage notification:', error);
+          Debug.error(`❌ Mark notification error: ${error.message}`);
         }
       },
       
       // ========== CONFIDENCES ==========
       async loadConfidences() {
         try {
+          Debug.info('Loading confidences...');
           document.getElementById('confidencesList').innerHTML = '<div class="loading">Chargement des histoires...</div>';
           
           const response = await fetch('/api/confidences');
@@ -521,23 +797,34 @@
           if (data.success) {
             this.state.confidences = data.data;
             this.renderConfidences();
+            Debug.success(`✅ Loaded ${data.data.length} confidences`);
+          } else {
+            throw new Error(data.message);
           }
         } catch (error) {
-          console.error('Erreur chargement:', error);
+          Debug.error(`❌ Load confidences error: ${error.message}`);
           document.getElementById('confidencesList').innerHTML = '<div class="empty-state">Impossible de charger les confidences</div>';
         }
       },
       
       async publishConfidence() {
+        if (!this.state.user) {
+          alert('Tu dois t\'inscrire pour publier une confidence');
+          this.openAuthModal();
+          return;
+        }
+        
         const text = document.getElementById('confidenceText').value.trim();
         const chapter = document.getElementById('chapterSelect').value;
         
         if (!text || text.length < 10) {
-          alert('Ton message est un peu court... Prends le temps de t\'exprimer.');
+          alert('Ton message est trop court (minimum 10 caractères)');
           return;
         }
         
-        const btn = document.querySelector('.submit-btn');
+        Debug.info(`Publishing confidence... (${text.length} chars, chapter: ${chapter})`);
+        
+        const btn = document.getElementById('publishBtn');
         btn.disabled = true;
         btn.textContent = '🤖 Analyse IA en cours...';
         
@@ -546,7 +833,7 @@
             method: 'POST',
             headers: { 
               'Content-Type': 'application/json',
-              'X-User-Id': this.state.userId
+              'X-User-Id': this.state.user.id
             },
             body: JSON.stringify({ text, chapter })
           });
@@ -554,11 +841,11 @@
           const data = await response.json();
           
           if (data.success) {
+            Debug.success('✅ Confidence published successfully');
             document.getElementById('confidenceText').value = '';
             await this.loadConfidences();
-            await this.loadNotifications(); // Charger nouvelles notifications
+            await this.loadNotifications();
             
-            // Ouvrir panel si notification importante
             if (data.data?.notification) {
               setTimeout(() => {
                 this.state.notificationPanelOpen = true;
@@ -569,10 +856,11 @@
             
             alert('✅ Ton histoire a été partagée anonymement.');
           } else {
+            Debug.error(`❌ Publish failed: ${data.message}`);
             alert('❌ ' + data.message);
           }
         } catch (error) {
-          console.error('Erreur publication:', error);
+          Debug.error(`❌ Publish error: ${error.message}`);
           alert('Erreur lors de la publication');
         } finally {
           btn.disabled = false;
@@ -591,9 +879,7 @@
         if (filtered.length === 0) {
           container.innerHTML = `
             <div class="empty-state">
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor">
-                <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 18c-4.41 0-8-3.59-8-8s3.59-8 8-8 8 3.59 8 8-3.59 8-8 8z"/>
-              </svg>
+              <div style="font-size: 3rem; margin-bottom: 20px;">📖</div>
               <div style="font-size: 1.2rem;">Aucune confidence dans ce chapitre.</div>
               <div style="margin-top: 10px;">Sois le premier à partager ton histoire.</div>
             </div>
@@ -653,7 +939,58 @@
       }
     };
     
-    document.addEventListener('DOMContentLoaded', () => App.init());
+    // ========== AUTO-DIAGNOSTICS ==========
+    window.addEventListener('load', async () => {
+      Debug.info('=== AUTO-DIAGNOSTICS START ===');
+      
+      // Test 1: Backend connectivity
+      try {
+        const response = await fetch('/api/health');
+        const data = await response.json();
+        
+        if (data.status === 'ok') {
+          Debug.success('✅ Backend connected');
+          Debug.success(`✅ Database: ${data.services?.database || 'unknown'}`);
+          Debug.success(`✅ AI: ${data.services?.ai || 'unknown'}`);
+        } else {
+          Debug.error('❌ Backend health check failed');
+        }
+      } catch (error) {
+        Debug.error(`❌ Backend unreachable: ${error.message}`);
+      }
+      
+      // Test 2: LocalStorage
+      try {
+        localStorage.setItem('test', '1');
+        localStorage.removeItem('test');
+        Debug.success('✅ LocalStorage available');
+      } catch (error) {
+        Debug.error('❌ LocalStorage blocked');
+      }
+      
+      // Test 3: DOM elements
+      const criticalElements = [
+        'authContainer',
+        'notificationBell',
+        'publishBtn',
+        'confidencesList',
+        'debugConsole'
+      ];
+      
+      criticalElements.forEach(id => {
+        if (document.getElementById(id)) {
+          Debug.success(`✅ Element found: ${id}`);
+        } else {
+          Debug.error(`❌ Element missing: ${id}`);
+        }
+      });
+      
+      Debug.info('=== AUTO-DIAGNOSTICS COMPLETE ===');
+      Debug.info('Press Ctrl+D to toggle this console');
+      
+      // Initialize app
+      App.init();
+    });
   </script>
 </body>
 </html>
