@@ -1,1 +1,28 @@
-.
+{
+  "name": "confidence-book",
+  "version": "1.0.0",
+  "description": "Plateforme d'expression émotionnelle anonyme avec IA",
+  "type": "module",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js",
+    "dev": "node --watch server.js"
+  },
+  "keywords": [
+    "emotional",
+    "anonymous",
+    "support",
+    "mental-health",
+    "ai-moderation"
+  ],
+  "author": "Anzize Daouda",
+  "license": "MIT",
+  "dependencies": {
+    "express": "^4.18.2",
+    "@libsql/client": "^0.4.0",
+    "groq-sdk": "^0.3.0"
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  }
+}
