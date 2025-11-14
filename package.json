@@ -6,8 +6,7 @@
   "main": "api.js",
   "scripts": {
     "start": "node api.js",
-    "dev": "node --watch api.js",
-    "test": "node api.js"
+    "dev": "node --watch api.js"
   },
   "keywords": [
     "confidence",
