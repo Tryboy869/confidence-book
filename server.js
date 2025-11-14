@@ -1,42 +1,60 @@
-// server.js - Backend Node.js Confidence Book avec IA Groq
+// server.js - BACKEND SERVICE REFACTORISÉ
+// Expose toutes les fonctions via BackendService class
+// NE DÉMARRE PLUS DE SERVEUR - Juste logique métier
 
-import express from 'express';
 import { createClient } from '@libsql/client';
 import Groq from 'groq-sdk';
-import path from 'path';
-import { fileURLToPath } from 'url';
 
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = path.dirname(__filename);
+// ========== BACKEND SERVICE CLASS ==========
+export class BackendService {
+  constructor() {
+    this.db = null;
+    this.groq = null;
+    this.rateLimits = new Map();
+    this.aiModeration = null;
+    this.notifications = null;
+  }
 
-const app = express();
-const PORT = process.env.PORT || 3000;
+  // ========== INITIALISATION ==========
+  async init() {
+    console.log('🔧 [BACKEND] Initializing services...');
 
-// ========== MIDDLEWARE ==========
-app.use(express.json());
-app.use(express.static(__dirname));
+    // Database (Turso)
+    try {
+      this.db = createClient({
+        url: process.env.TURSO_DATABASE_URL,
+        authToken: process.env.TURSO_AUTH_TOKEN
+      });
+      
+      await this.initDatabase();
+      console.log('✅ [BACKEND] Database connected');
+    } catch (error) {
+      console.error('❌ [BACKEND] Database connection failed:', error);
+      throw error;
+    }
 
-// ========== DATABASE (Turso) ==========
-const db = createClient({
-  url: process.env.TURSO_DATABASE_URL,
-  authToken: process.env.TURSO_AUTH_TOKEN
-});
+    // Groq AI
+    try {
+      this.groq = new Groq({
+        apiKey: process.env.GROQ_API_KEY
+      });
+      console.log('✅ [BACKEND] Groq AI connected');
+    } catch (error) {
+      console.warn('⚠️ [BACKEND] Groq AI offline, using fallback moderation');
+    }
 
-// ========== GROQ AI ==========
-const groq = new Groq({
-  apiKey: process.env.GROQ_API_KEY
-});
+    // Services
+    this.aiModeration = new AIModeration(this.groq);
+    this.notifications = new NotificationService(this.db);
 
-const AI_MODELS = [
-  'llama-3.3-70b-versatile',
-  'llama-3.1-70b-versatile', 
-  'mixtral-8x7b-32768'
-];
+    // Cleanup job
+    this.startCleanupJob();
 
-// ========== INIT DB ==========
-async function initDatabase() {
-  try {
-    await db.execute(`
+    console.log('✅ [BACKEND] All services initialized');
+  }
+
+  async initDatabase() {
+    await this.db.execute(`
       CREATE TABLE IF NOT EXISTS confidences (
         id TEXT PRIMARY KEY,
         text TEXT NOT NULL,
@@ -47,8 +65,8 @@ async function initDatabase() {
         created_at DATETIME DEFAULT CURRENT_TIMESTAMP
       )
     `);
-    
-    await db.execute(`
+
+    await this.db.execute(`
       CREATE TABLE IF NOT EXISTS reactions (
         id TEXT PRIMARY KEY,
         confidence_id TEXT NOT NULL,
@@ -58,8 +76,8 @@ async function initDatabase() {
         FOREIGN KEY (confidence_id) REFERENCES confidences(id)
       )
     `);
-    
-    await db.execute(`
+
+    await this.db.execute(`
       CREATE TABLE IF NOT EXISTS notifications (
         id TEXT PRIMARY KEY,
         user_id TEXT NOT NULL,
@@ -69,47 +87,266 @@ async function initDatabase() {
         created_at DATETIME DEFAULT CURRENT_TIMESTAMP
       )
     `);
-    
-    console.log('✅ Database initialized');
-  } catch (error) {
-    console.error('❌ Database init error:', error);
+  }
+
+  startCleanupJob() {
+    setInterval(async () => {
+      try {
+        const threeMonthsAgo = new Date();
+        threeMonthsAgo.setMonth(threeMonthsAgo.getMonth() - 3);
+
+        const result = await this.db.execute({
+          sql: 'DELETE FROM confidences WHERE created_at < ?',
+          args: [threeMonthsAgo.toISOString()]
+        });
+
+        if (result.rowsAffected > 0) {
+          console.log(`🗑️ [BACKEND] Cleaned up ${result.rowsAffected} old confidences`);
+        }
+      } catch (error) {
+        console.error('❌ [BACKEND] Cleanup error:', error);
+      }
+    }, 24 * 60 * 60 * 1000);
+  }
+
+  // ========== RATE LIMITING ==========
+  checkRateLimit(userId, maxRequests = 5, windowMs = 60000) {
+    const now = Date.now();
+    const userLimits = this.rateLimits.get(userId) || [];
+    const recentRequests = userLimits.filter(time => now - time < windowMs);
+
+    if (recentRequests.length >= maxRequests) {
+      return false;
+    }
+
+    recentRequests.push(now);
+    this.rateLimits.set(userId, recentRequests);
+    return true;
+  }
+
+  // ========== EXPOSED API FUNCTIONS ==========
+
+  async healthCheck() {
+    return {
+      status: 'ok',
+      timestamp: new Date().toISOString(),
+      services: {
+        database: this.db ? 'connected' : 'offline',
+        ai: this.groq ? 'connected' : 'offline'
+      }
+    };
+  }
+
+  async getConfidences(query) {
+    const { chapter } = query;
+
+    let sql = `
+      SELECT id, text, chapter, created_at 
+      FROM confidences 
+      WHERE moderation_score >= 0.5
+    `;
+
+    if (chapter && chapter !== 'all') {
+      sql += ` AND chapter = ?`;
+    }
+
+    sql += ` ORDER BY created_at DESC LIMIT 50`;
+
+    const result = chapter && chapter !== 'all'
+      ? await this.db.execute({ sql, args: [chapter] })
+      : await this.db.execute(sql);
+
+    return {
+      success: true,
+      data: result.rows
+    };
+  }
+
+  async publishConfidence(body, headers) {
+    const { text, chapter } = body;
+    const userId = headers['x-user-id'] || 'anonymous';
+
+    // Validation
+    if (!text || text.trim().length < 10) {
+      return {
+        success: false,
+        message: 'Ton message est trop court (minimum 10 caractères)'
+      };
+    }
+
+    if (text.length > 5000) {
+      return {
+        success: false,
+        message: 'Ton message est trop long (maximum 5000 caractères)'
+      };
+    }
+
+    const validChapters = ['ruptures', 'isolement', 'trauma', 'espoir'];
+    if (!validChapters.includes(chapter)) {
+      return {
+        success: false,
+        message: 'Chapitre invalide'
+      };
+    }
+
+    // Rate limiting
+    if (!this.checkRateLimit(userId, 5, 60000)) {
+      await this.notifications.create(userId, 'rate_limit');
+      return {
+        success: false,
+        message: 'Tu publies trop vite. Prends une pause de quelques instants.'
+      };
+    }
+
+    // Modération IA
+    console.log('🤖 [BACKEND] AI moderation started...');
+    const moderationResult = await this.aiModeration.analyze(text, chapter);
+    console.log(`🤖 [BACKEND] Moderation score: ${moderationResult.score.toFixed(2)}`);
+
+    if (!moderationResult.shouldPublish) {
+      await this.notifications.create(userId, 'warning');
+      return {
+        success: false,
+        message: 'Ton message ne respecte pas les règles de bienveillance. Reformule-le avec plus de douceur.'
+      };
+    }
+
+    // Insertion en base
+    const confidenceId = generateId();
+
+    await this.db.execute({
+      sql: `INSERT INTO confidences (id, text, chapter, user_id, moderation_score, ai_flags)
+            VALUES (?, ?, ?, ?, ?, ?)`,
+      args: [
+        confidenceId,
+        text,
+        chapter,
+        userId,
+        moderationResult.score,
+        JSON.stringify(moderationResult.flags)
+      ]
+    });
+
+    // Créer notification selon type
+    let notificationCreated = null;
+
+    if (moderationResult.notification.type === 'crisis') {
+      notificationCreated = await this.notifications.create(userId, 'crisis', moderationResult.notification.message);
+    } else if (moderationResult.notification.type === 'support') {
+      notificationCreated = await this.notifications.create(userId, 'support', moderationResult.notification.message);
+    }
+
+    return {
+      success: true,
+      message: 'Confidence publiée avec succès',
+      data: {
+        id: confidenceId,
+        moderationScore: moderationResult.score,
+        notification: notificationCreated
+      }
+    };
+  }
+
+  async getNotifications(headers) {
+    const userId = headers['x-user-id'] || 'anonymous';
+    const unreadNotifications = await this.notifications.getUnread(userId);
+
+    return {
+      success: true,
+      data: unreadNotifications
+    };
+  }
+
+  async markNotificationRead(notificationId, headers) {
+    const userId = headers['x-user-id'] || 'anonymous';
+    const success = await this.notifications.markAsRead(notificationId, userId);
+
+    return { success };
+  }
+
+  async addReaction(body, headers) {
+    const { confidenceId, type } = body;
+    const userId = headers['x-user-id'] || 'anonymous';
+
+    const validTypes = ['reconforted', 'useful', 'thinking'];
+    if (!validTypes.includes(type)) {
+      return {
+        success: false,
+        message: 'Type de réaction invalide'
+      };
+    }
+
+    const confidence = await this.db.execute({
+      sql: 'SELECT id FROM confidences WHERE id = ?',
+      args: [confidenceId]
+    });
+
+    if (confidence.rows.length === 0) {
+      return {
+        success: false,
+        message: 'Confidence introuvable'
+      };
+    }
+
+    const reactionId = generateId();
+
+    await this.db.execute({
+      sql: `INSERT INTO reactions (id, confidence_id, type, user_id) VALUES (?, ?, ?, ?)`,
+      args: [reactionId, confidenceId, type, userId]
+    });
+
+    return {
+      success: true,
+      message: 'Réaction enregistrée'
+    };
   }
 }
 
-// ========== MODERATION IA SERVICE ==========
+// ========== AI MODERATION SERVICE ==========
 class AIModeration {
+  constructor(groq) {
+    this.groq = groq;
+    this.models = [
+      'llama-3.3-70b-versatile',
+      'llama-3.1-70b-versatile',
+      'mixtral-8x7b-32768'
+    ];
+  }
+
   async analyze(text, chapter) {
+    if (!this.groq) {
+      return this.basicFallback(text);
+    }
+
     try {
       const prompt = this.buildPrompt(text, chapter);
-      
-      // Essayer les modèles dans l'ordre
-      for (const model of AI_MODELS) {
+
+      for (const model of this.models) {
         try {
-          const completion = await groq.chat.completions.create({
+          const completion = await this.groq.chat.completions.create({
             messages: [{ role: 'user', content: prompt }],
             model: model,
             temperature: 0.3,
             max_tokens: 500
           });
-          
+
           const response = completion.choices[0]?.message?.content;
           return this.parseAIResponse(response);
-          
+
         } catch (modelError) {
-          console.warn(`⚠️ Model ${model} failed, trying next...`);
+          console.warn(`⚠️ [BACKEND] Model ${model} failed, trying next...`);
           continue;
         }
       }
-      
-      // Si tous les modèles échouent, fallback basique
+
       return this.basicFallback(text);
-      
+
     } catch (error) {
-      console.error('❌ AI Moderation error:', error);
+      console.error('❌ [BACKEND] AI Moderation error:', error);
       return this.basicFallback(text);
     }
   }
-  
+
   buildPrompt(text, chapter) {
     const chapterContext = {
       ruptures: 'ruptures amoureuses et relations douloureuses',
@@ -117,7 +354,7 @@ class AIModeration {
       trauma: 'expériences traumatisantes',
       espoir: 'reconstruction et moments d\'espoir'
     }[chapter] || 'expression émotionnelle';
-    
+
     return `Tu es modérateur bienveillant pour Confidence Book, plateforme d'expression émotionnelle anonyme.
 
 CONTEXTE : ${chapterContext}
@@ -144,21 +381,16 @@ RÈGLES :
 
 Sois BIENVEILLANT. Les pensées suicidaires sont légitimes sur cette plateforme.`;
   }
-  
+
   parseAIResponse(response) {
     try {
-      // Nettoyer la réponse (enlever markdown, etc.)
       let cleaned = response.trim();
-      
-      // Chercher le JSON
       const jsonMatch = cleaned.match(/\{[\s\S]*\}/);
       if (!jsonMatch) throw new Error('No JSON found');
-      
+
       const parsed = JSON.parse(jsonMatch[0]);
-      
-      // Normaliser le score entre 0 et 1
       const normalizedScore = parsed.safety_score / 10;
-      
+
       return {
         score: normalizedScore,
         shouldPublish: parsed.should_publish,
@@ -172,30 +404,30 @@ Sois BIENVEILLANT. Les pensées suicidaires sont légitimes sur cette plateforme
           message: parsed.notification_message
         }
       };
-      
+
     } catch (error) {
-      console.error('❌ Parse AI response error:', error);
+      console.error('❌ [BACKEND] Parse AI response error:', error);
       return this.basicFallback('');
     }
   }
-  
+
   basicFallback(text) {
     const lower = text.toLowerCase();
-    
+
     const toxicWords = ['connard', 'salope', 'imbécile', 'con', 'pute'];
     const hasToxic = toxicWords.some(w => lower.includes(w));
-    
+
     const suicidalWords = ['suicide', 'me tuer', 'en finir', 'plus envie de vivre'];
     const hasSuicidal = suicidalWords.some(w => lower.includes(w));
-    
+
     const violenceWords = ['tuer', 'frapper', 'cogner'];
     const hasViolence = violenceWords.some(w => lower.includes(w));
-    
+
     let score = 0.9;
     if (hasToxic) score = 0.2;
     else if (hasViolence) score = 0.3;
     else if (hasSuicidal) score = 0.6;
-    
+
     return {
       score,
       shouldPublish: score >= 0.5,
@@ -212,10 +444,12 @@ Sois BIENVEILLANT. Les pensées suicidaires sont légitimes sur cette plateforme
   }
 }
 
-const aiModeration = new AIModeration();
-
 // ========== NOTIFICATION SERVICE ==========
 class NotificationService {
+  constructor(db) {
+    this.db = db;
+  }
+
   async create(userId, type, customMessage = null) {
     const messages = {
       welcome: {
@@ -246,333 +480,52 @@ Tu n'es pas obligé(e) d'être en crise pour appeler. Juste être fatigué(e) de
         type: 'warning'
       }
     };
-    
+
     const notification = messages[type] || { message: customMessage, type: 'info' };
-    
+
     try {
       const id = generateId();
-      await db.execute({
+      await this.db.execute({
         sql: `INSERT INTO notifications (id, user_id, message, type) VALUES (?, ?, ?, ?)`,
         args: [id, userId, notification.message, notification.type]
       });
-      
+
       return notification;
     } catch (error) {
-      console.error('❌ Notification creation error:', error);
+      console.error('❌ [BACKEND] Notification creation error:', error);
       return null;
     }
   }
-  
+
   async getUnread(userId) {
     try {
-      const result = await db.execute({
+      const result = await this.db.execute({
         sql: `SELECT * FROM notifications WHERE user_id = ? AND is_read = 0 ORDER BY created_at DESC LIMIT 10`,
         args: [userId]
       });
-      
+
       return result.rows;
     } catch (error) {
-      console.error('❌ Get notifications error:', error);
+      console.error('❌ [BACKEND] Get notifications error:', error);
       return [];
     }
   }
-  
+
   async markAsRead(notificationId, userId) {
     try {
-      await db.execute({
+      await this.db.execute({
         sql: `UPDATE notifications SET is_read = 1 WHERE id = ? AND user_id = ?`,
         args: [notificationId, userId]
       });
       return true;
     } catch (error) {
-      console.error('❌ Mark notification read error:', error);
+      console.error('❌ [BACKEND] Mark notification read error:', error);
       return false;
     }
   }
-}
-
-const notifications = new NotificationService();
-
-// ========== RATE LIMITING ==========
-const rateLimits = new Map();
-
-function checkRateLimit(userId, maxRequests = 5, windowMs = 60000) {
-  const now = Date.now();
-  const userLimits = rateLimits.get(userId) || [];
-  const recentRequests = userLimits.filter(time => now - time < windowMs);
-  
-  if (recentRequests.length >= maxRequests) return false;
-  
-  recentRequests.push(now);
-  rateLimits.set(userId, recentRequests);
-  return true;
 }
 
 // ========== HELPERS ==========
 function generateId() {
   return Date.now().toString(36) + Math.random().toString(36).substr(2);
 }
-
-// ========== ROUTES ==========
-
-app.get('/', (req, res) => {
-  res.sendFile(path.join(__dirname, 'index.html'));
-});
-
-app.get('/api/health', (req, res) => {
-  res.json({ 
-    status: 'ok', 
-    timestamp: new Date().toISOString(),
-    services: {
-      database: 'connected',
-      ai: groq ? 'connected' : 'offline'
-    }
-  });
-});
-
-// GET confidences
-app.get('/api/confidences', async (req, res) => {
-  try {
-    const { chapter } = req.query;
-    
-    let query = `
-      SELECT id, text, chapter, created_at 
-      FROM confidences 
-      WHERE moderation_score >= 0.5
-    `;
-    
-    if (chapter && chapter !== 'all') {
-      query += ` AND chapter = ?`;
-    }
-    
-    query += ` ORDER BY created_at DESC LIMIT 50`;
-    
-    const result = chapter && chapter !== 'all' 
-      ? await db.execute({ sql: query, args: [chapter] })
-      : await db.execute(query);
-    
-    res.json({
-      success: true,
-      data: result.rows
-    });
-  } catch (error) {
-    console.error('❌ GET confidences error:', error);
-    res.status(500).json({
-      success: false,
-      message: 'Erreur lors du chargement'
-    });
-  }
-});
-
-// POST confidence
-app.post('/api/confidences', async (req, res) => {
-  try {
-    const { text, chapter } = req.body;
-    const userId = req.headers['x-user-id'] || 'anonymous';
-    
-    // Validation
-    if (!text || text.trim().length < 10) {
-      return res.json({
-        success: false,
-        message: 'Ton message est trop court (minimum 10 caractères)'
-      });
-    }
-    
-    if (text.length > 5000) {
-      return res.json({
-        success: false,
-        message: 'Ton message est trop long (maximum 5000 caractères)'
-      });
-    }
-    
-    const validChapters = ['ruptures', 'isolement', 'trauma', 'espoir'];
-    if (!validChapters.includes(chapter)) {
-      return res.json({
-        success: false,
-        message: 'Chapitre invalide'
-      });
-    }
-    
-    // Rate limiting
-    if (!checkRateLimit(userId, 5, 60000)) {
-      await notifications.create(userId, 'rate_limit');
-      return res.json({
-        success: false,
-        message: 'Tu publies trop vite. Prends une pause de quelques instants.'
-      });
-    }
-    
-    // Modération IA
-    console.log('🤖 Analysing with AI...');
-    const moderationResult = await aiModeration.analyze(text, chapter);
-    
-    if (!moderationResult.shouldPublish) {
-      await notifications.create(userId, 'warning');
-      return res.json({
-        success: false,
-        message: 'Ton message ne respecte pas les règles de bienveillance. Reformule-le avec plus de douceur.'
-      });
-    }
-    
-    // Insertion en base
-    const confidenceId = generateId();
-    
-    await db.execute({
-      sql: `INSERT INTO confidences (id, text, chapter, user_id, moderation_score, ai_flags)
-            VALUES (?, ?, ?, ?, ?, ?)`,
-      args: [
-        confidenceId, 
-        text, 
-        chapter, 
-        userId, 
-        moderationResult.score,
-        JSON.stringify(moderationResult.flags)
-      ]
-    });
-    
-    // Créer notification selon type
-    let notificationCreated = null;
-    
-    if (moderationResult.notification.type === 'crisis') {
-      notificationCreated = await notifications.create(userId, 'crisis', moderationResult.notification.message);
-    } else if (moderationResult.notification.type === 'support') {
-      notificationCreated = await notifications.create(userId, 'support', moderationResult.notification.message);
-    }
-    
-    res.json({
-      success: true,
-      message: 'Confidence publiée avec succès',
-      data: {
-        id: confidenceId,
-        moderationScore: moderationResult.score,
-        notification: notificationCreated
-      }
-    });
-    
-  } catch (error) {
-    console.error('❌ POST confidence error:', error);
-    res.status(500).json({
-      success: false,
-      message: 'Erreur lors de la publication'
-    });
-  }
-});
-
-// GET notifications
-app.get('/api/notifications', async (req, res) => {
-  try {
-    const userId = req.headers['x-user-id'] || 'anonymous';
-    const unreadNotifications = await notifications.getUnread(userId);
-    
-    res.json({
-      success: true,
-      data: unreadNotifications
-    });
-  } catch (error) {
-    console.error('❌ GET notifications error:', error);
-    res.status(500).json({
-      success: false,
-      message: 'Erreur lors de la récupération des notifications'
-    });
-  }
-});
-
-// POST mark notification as read
-app.post('/api/notifications/:id/read', async (req, res) => {
-  try {
-    const { id } = req.params;
-    const userId = req.headers['x-user-id'] || 'anonymous';
-    
-    const success = await notifications.markAsRead(id, userId);
-    
-    res.json({ success });
-  } catch (error) {
-    console.error('❌ Mark notification read error:', error);
-    res.status(500).json({ success: false });
-  }
-});
-
-// POST reaction
-app.post('/api/reactions', async (req, res) => {
-  try {
-    const { confidenceId, type } = req.body;
-    const userId = req.headers['x-user-id'] || 'anonymous';
-    
-    const validTypes = ['reconforted', 'useful', 'thinking'];
-    if (!validTypes.includes(type)) {
-      return res.json({
-        success: false,
-        message: 'Type de réaction invalide'
-      });
-    }
-    
-    const confidence = await db.execute({
-      sql: 'SELECT id FROM confidences WHERE id = ?',
-      args: [confidenceId]
-    });
-    
-    if (confidence.rows.length === 0) {
-      return res.json({
-        success: false,
-        message: 'Confidence introuvable'
-      });
-    }
-    
-    const reactionId = generateId();
-    
-    await db.execute({
-      sql: `INSERT INTO reactions (id, confidence_id, type, user_id) VALUES (?, ?, ?, ?)`,
-      args: [reactionId, confidenceId, type, userId]
-    });
-    
-    res.json({
-      success: true,
-      message: 'Réaction enregistrée'
-    });
-    
-  } catch (error) {
-    console.error('❌ POST reaction error:', error);
-    res.status(500).json({
-      success: false,
-      message: 'Erreur lors de l\'enregistrement'
-    });
-  }
-});
-
-// ========== CLEANUP JOB ==========
-async function cleanupOldConfidences() {
-  try {
-    const threeMonthsAgo = new Date();
-    threeMonthsAgo.setMonth(threeMonthsAgo.getMonth() - 3);
-    
-    const result = await db.execute({
-      sql: 'DELETE FROM confidences WHERE created_at < ?',
-      args: [threeMonthsAgo.toISOString()]
-    });
-    
-    console.log(`🗑️ Cleaned up ${result.rowsAffected} old confidences`);
-  } catch (error) {
-    console.error('❌ Cleanup error:', error);
-  }
-}
-
-setInterval(cleanupOldConfidences, 24 * 60 * 60 * 1000);
-
-// ========== START SERVER ==========
-async function startServer() {
-  await initDatabase();
-  
-  app.listen(PORT, '0.0.0.0', () => {
-    console.log(`
-    ✅ Confidence Book server running
-    🌍 Port: ${PORT}
-    🗄️ Database: Turso
-    🤖 AI: Groq (${AI_MODELS[0]})
-    🛡️ Moderation: Active
-    🔔 Notifications: Enabled
-    📅 Auto-cleanup: 3 months
-    `);
-  });
-}
-
-startServer();
