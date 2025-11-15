@@ -116,6 +116,30 @@ app.post('/api/responses', async (req, res) => {
   }
 });
 
+// Supprimer confidence
+app.delete('/api/confidences/:id', async (req, res) => {
+  try {
+    console.log(`🗑️ [API GATEWAY] Deleting confidence ${req.params.id}`);
+    const result = await backend.deleteConfidence(req.params.id, req.headers);
+    res.json(result);
+  } catch (error) {
+    console.error('❌ [API GATEWAY] Error:', error);
+    res.status(500).json({ success: false, message: error.message });
+  }
+});
+
+// Modifier confidence
+app.put('/api/confidences/:id', async (req, res) => {
+  try {
+    console.log(`✏️ [API GATEWAY] Updating confidence ${req.params.id}`);
+    const result = await backend.updateConfidence(req.params.id, req.body, req.headers);
+    res.json(result);
+  } catch (error) {
+    console.error('❌ [API GATEWAY] Error:', error);
+    res.status(500).json({ success: false, message: error.message });
+  }
+});
+
 // ========== ERROR HANDLERS ==========
 app.use((err, req, res, next) => {
   console.error('💥 [API GATEWAY] Unhandled error:', err);
