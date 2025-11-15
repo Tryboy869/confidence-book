@@ -1,10 +1,10 @@
-// api.js - ORCHESTRATEUR CENTRAL NEXUS AXION 3.5
-// Point d'entrée unique du déploiement - Connecte frontend ↔ backend
+// api.js - API GATEWAY CONFIDENCE BOOK
+// Point d'entrée unique selon architecture NEXUS AXION 3.5
 
 import express from 'express';
 import path from 'path';
 import { fileURLToPath } from 'url';
-import { BackendService } from './server.js';
+import { ConfidenceBookService } from './server.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -14,51 +14,40 @@ const PORT = process.env.PORT || 3000;
 
 // ========== MIDDLEWARE ==========
 app.use(express.json());
-app.use(express.static(__dirname));
+app.use(express.static(__dirname)); // Sert le frontend
 
-// ========== INITIALISER BACKEND SERVICE ==========
+// Logging middleware
+app.use((req, res, next) => {
+  console.log(`📡 [API GATEWAY] ${req.method} ${req.path}`);
+  next();
+});
+
+// ========== INITIALISER BACKEND ==========
 let backend;
 
 async function initBackend() {
-  console.log('🔧 [API GATEWAY] Initializing backend service...');
-  try {
-    backend = new BackendService();
-    await backend.init();
-    console.log('✅ [API GATEWAY] Backend service ready');
-  } catch (error) {
-    console.error('❌ [API GATEWAY] Backend init failed:', error);
-    process.exit(1);
-  }
+  console.log('🔧 [API GATEWAY] Initializing Confidence Book backend...');
+  backend = new ConfidenceBookService();
+  await backend.init();
+  console.log('✅ [API GATEWAY] Backend ready');
 }
 
-// ========== API GATEWAY ROUTES MAPPING ==========
-// Chaque endpoint frontend est mappé automatiquement vers fonction backend
-
+// ========== ROUTE MAP ==========
 const routeMap = {
-  // Health & Diagnostics
-  'GET:/api/health': (req) => backend.healthCheck(),
-  
-  // Confidences CRUD
+  'POST:/api/auth/anonymous': (req) => backend.createAnonymousUser(),
   'GET:/api/confidences': (req) => backend.getConfidences(req.query),
-  'POST:/api/confidences': (req) => backend.publishConfidence(req.body, req.headers),
-  
-  // Notifications
-  'GET:/api/notifications': (req) => backend.getNotifications(req.headers),
-  'POST:/api/notifications/:id/read': (req) => backend.markNotificationRead(req.params.id, req.headers),
-  
-  // Reactions
+  'POST:/api/confidences': (req) => backend.createConfidence(req.body, req.headers),
   'POST:/api/reactions': (req) => backend.addReaction(req.body, req.headers),
+  'POST:/api/responses': (req) => backend.addResponse(req.body, req.headers),
+  'GET:/api/health': (req) => backend.healthCheck(),
 };
 
 // ========== ROUTER CENTRAL ==========
-// Cette fonction route TOUS les appels API vers le backend
-
 function routeRequest(method, path, req) {
   const routeKey = `${method}:${path}`;
   
-  console.log(`📡 [API GATEWAY] Routing: ${routeKey}`);
-  console.log(`   └─ Headers:`, req.headers['x-user-id'] ? `User: ${req.headers['x-user-id']}` : 'Anonymous');
-  console.log(`   └─ Body:`, req.body ? JSON.stringify(req.body).substring(0, 100) : 'None');
+  console.log(`📡 [API GATEWAY] ${routeKey}`);
+  console.log(`   └─ User: ${req.headers['x-user-id'] || 'anonymous'}`);
   
   const handler = routeMap[routeKey];
   
@@ -72,180 +61,113 @@ function routeRequest(method, path, req) {
 
 // ========== EXPOSE FRONTEND ==========
 app.get('/', (req, res) => {
-  console.log('🌐 [API GATEWAY] Serving frontend: index.html');
+  console.log('🌐 [API GATEWAY] Serving frontend');
   res.sendFile(path.join(__dirname, 'index.html'));
 });
 
-// ========== API ENDPOINTS (AUTO-ROUTED) ==========
+// ========== API ENDPOINTS ==========
 
-// Health Check
+// Health check
 app.get('/api/health', async (req, res) => {
   try {
     const result = await routeRequest('GET', '/api/health', req);
     res.json(result);
   } catch (error) {
-    console.error('❌ [API GATEWAY] Health check error:', error);
-    res.status(500).json({ 
-      status: 'error', 
-      message: error.message,
-      timestamp: new Date().toISOString()
-    });
+    console.error('❌ [API GATEWAY] Error:', error);
+    res.status(500).json({ success: false, message: error.message });
   }
 });
 
-// Get Confidences
+// Authentification anonyme
+app.post('/api/auth/anonymous', async (req, res) => {
+  try {
+    const result = await routeRequest('POST', '/api/auth/anonymous', req);
+    console.log(`✅ [API GATEWAY] Anonymous user created: ${result.userId}`);
+    res.json(result);
+  } catch (error) {
+    console.error('❌ [API GATEWAY] Error:', error);
+    res.status(500).json({ success: false, message: error.message });
+  }
+});
+
+// Récupérer confidences
 app.get('/api/confidences', async (req, res) => {
   try {
     const result = await routeRequest('GET', '/api/confidences', req);
     console.log(`✅ [API GATEWAY] Returned ${result.data?.length || 0} confidences`);
     res.json(result);
   } catch (error) {
-    console.error('❌ [API GATEWAY] Get confidences error:', error);
-    res.status(500).json({
-      success: false,
-      message: 'Erreur lors du chargement'
-    });
+    console.error('❌ [API GATEWAY] Error:', error);
+    res.status(500).json({ success: false, message: error.message });
   }
 });
 
-// Publish Confidence
+// Créer confidence
 app.post('/api/confidences', async (req, res) => {
   try {
-    console.log(`📝 [API GATEWAY] Publishing confidence (${req.body?.text?.length || 0} chars)`);
+    console.log(`📝 [API GATEWAY] Creating confidence:`, {
+      emotion: req.body.emotion,
+      contentLength: req.body.content?.length
+    });
     const result = await routeRequest('POST', '/api/confidences', req);
-    
-    if (result.success) {
-      console.log(`✅ [API GATEWAY] Confidence published: ${result.data?.id}`);
-    } else {
-      console.warn(`⚠️ [API GATEWAY] Confidence rejected: ${result.message}`);
-    }
-    
     res.json(result);
   } catch (error) {
-    console.error('❌ [API GATEWAY] Publish confidence error:', error);
-    res.status(500).json({
-      success: false,
-      message: 'Erreur lors de la publication'
-    });
+    console.error('❌ [API GATEWAY] Error:', error);
+    res.status(500).json({ success: false, message: error.message });
   }
 });
 
-// Get Notifications
-app.get('/api/notifications', async (req, res) => {
-  try {
-    const result = await routeRequest('GET', '/api/notifications', req);
-    console.log(`✅ [API GATEWAY] Returned ${result.data?.length || 0} notifications`);
-    res.json(result);
-  } catch (error) {
-    console.error('❌ [API GATEWAY] Get notifications error:', error);
-    res.status(500).json({
-      success: false,
-      message: 'Erreur lors de la récupération'
-    });
-  }
-});
-
-// Mark Notification as Read
-app.post('/api/notifications/:id/read', async (req, res) => {
-  try {
-    console.log(`✅ [API GATEWAY] Marking notification as read: ${req.params.id}`);
-    const result = await routeRequest('POST', `/api/notifications/${req.params.id}/read`, req);
-    res.json(result);
-  } catch (error) {
-    console.error('❌ [API GATEWAY] Mark notification error:', error);
-    res.status(500).json({ success: false });
-  }
-});
-
-// Add Reaction
+// Ajouter réaction
 app.post('/api/reactions', async (req, res) => {
   try {
-    console.log(`💙 [API GATEWAY] Adding reaction: ${req.body?.type}`);
+    console.log(`💙 [API GATEWAY] Adding reaction:`, req.body);
     const result = await routeRequest('POST', '/api/reactions', req);
     res.json(result);
   } catch (error) {
-    console.error('❌ [API GATEWAY] Add reaction error:', error);
-    res.status(500).json({
-      success: false,
-      message: 'Erreur lors de l\'enregistrement'
-    });
+    console.error('❌ [API GATEWAY] Error:', error);
+    res.status(500).json({ success: false, message: error.message });
   }
 });
 
-// ========== ERROR HANDLER ==========
-app.use((err, req, res, next) => {
-  console.error('💥 [API GATEWAY] Unhandled error:', err);
-  res.status(500).json({
-    success: false,
-    message: 'Erreur serveur interne',
-    error: process.env.NODE_ENV === 'development' ? err.message : undefined
-  });
+// Ajouter réponse
+app.post('/api/responses', async (req, res) => {
+  try {
+    console.log(`💬 [API GATEWAY] Adding response to confidence ${req.body.confidenceId}`);
+    const result = await routeRequest('POST', '/api/responses', req);
+    res.json(result);
+  } catch (error) {
+    console.error('❌ [API GATEWAY] Error:', error);
+    res.status(500).json({ success: false, message: error.message });
+  }
 });
 
-// ========== 404 HANDLER ==========
+// ========== ERROR HANDLERS ==========
+app.use((err, req, res, next) => {
+  console.error('💥 [API GATEWAY] Unhandled error:', err);
+  res.status(500).json({ success: false, message: 'Internal server error' });
+});
+
 app.use((req, res) => {
-  console.warn(`⚠️ [API GATEWAY] 404 Not Found: ${req.method} ${req.path}`);
-  res.status(404).json({
-    success: false,
-    message: 'Route introuvable'
-  });
+  console.warn(`⚠️ [API GATEWAY] 404: ${req.method} ${req.path}`);
+  res.status(404).json({ success: false, message: 'Route not found' });
 });
 
 // ========== START SERVER ==========
 async function startServer() {
-  try {
-    // 1. Initialiser backend
-    await initBackend();
-    
-    // 2. Démarrer serveur
-    app.listen(PORT, '0.0.0.0', () => {
-      console.log(`
+  await initBackend();
+  
+  app.listen(PORT, '0.0.0.0', () => {
+    console.log(`
 ╔═══════════════════════════════════════════════════════╗
-║                                                       ║
 ║   🌌 CONFIDENCE BOOK - API GATEWAY                    ║
-║   Architecture: NEXUS AXION 3.5                      ║
-║                                                       ║
-║   🌐 Server:     http://0.0.0.0:${PORT.toString().padEnd(4)}                    ║
-║   📂 Frontend:   index.html (served at /)            ║
-║   ⚙️  Backend:    server.js (BackendService)          ║
-║   🔀 Gateway:     api.js (this file)                 ║
-║                                                       ║
-║   Status:                                            ║
-║   ✅ Database:    ${backend.db ? 'Connected' : 'Offline'.padEnd(9)}                     ║
-║   ✅ AI:          ${backend.groq ? 'Connected' : 'Offline'.padEnd(9)}                     ║
-║   ✅ Routing:     ${Object.keys(routeMap).length} endpoints mapped               ║
-║                                                       ║
-║   🔧 Endpoints:                                       ║
-║      GET  /                                          ║
-║      GET  /api/health                                ║
-║      GET  /api/confidences                           ║
-║      POST /api/confidences                           ║
-║      GET  /api/notifications                         ║
-║      POST /api/notifications/:id/read                ║
-║      POST /api/reactions                             ║
-║                                                       ║
+║   🌐 Server:     http://0.0.0.0:${PORT.toString().padEnd(27)}║
+║   📂 Frontend:   index.html                           ║
+║   ⚙️  Backend:    server.js                            ║
+║   🔀 Gateway:     api.js (this file)                  ║
+║   ✅ Routing:     ${Object.keys(routeMap).length} endpoints mapped                ║
 ╚═══════════════════════════════════════════════════════╝
-      `);
-      
-      console.log('📡 [API GATEWAY] Ready to route requests...\n');
-    });
-    
-  } catch (error) {
-    console.error('💥 [API GATEWAY] Failed to start:', error);
-    process.exit(1);
-  }
+    `);
+  });
 }
 
-// ========== GRACEFUL SHUTDOWN ==========
-process.on('SIGTERM', () => {
-  console.log('🛑 [API GATEWAY] SIGTERM received, shutting down...');
-  process.exit(0);
-});
-
-process.on('SIGINT', () => {
-  console.log('🛑 [API GATEWAY] SIGINT received, shutting down...');
-  process.exit(0);
-});
-
-// ========== LAUNCH ==========
 startServer();
