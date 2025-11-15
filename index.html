@@ -453,6 +453,15 @@
         function renderConfidence(conf) {
             const chapter = CHAPTERS.find(ch => ch.id === conf.emotion) || CHAPTERS[0];
             
+            // Boutons d'action si c'est notre confidence
+            const isOwner = conf.user_id === currentUserId;
+            const ownerActions = isOwner ? `
+                <div class="flex gap-2 ml-auto">
+                    <button onclick="editConfidence('${conf.id}')" class="text-sm text-blue-500 hover:underline">✏️ Modifier</button>
+                    <button onclick="deleteConfidence('${conf.id}')" class="text-sm text-red-500 hover:underline">🗑️ Supprimer</button>
+                </div>
+            ` : '';
+            
             const responsesHTML = conf.responses && conf.responses.length > 0 
                 ? conf.responses.map(resp => `
                     <div class="flex space-x-3">
@@ -472,14 +481,15 @@
                         <div class="w-11 h-11 rounded-full bg-${chapter.color}-100 dark:bg-${chapter.color}-800 flex items-center justify-center flex-shrink-0">
                             <span class="text-xl">${chapter.emoji}</span>
                         </div>
-                        <div>
+                        <div class="flex-1">
                             <p class="text-sm text-secondary">Une confidence sur le thème :</p>
                             <h3 class="font-semibold text-${chapter.color}-600 dark:text-${chapter.color}-400">${chapter.name}</h3>
                         </div>
+                        ${ownerActions}
                     </div>
                     
                     <div class="p-5">
-                        <p class="text-lg leading-relaxed">${escapeHtml(conf.content)}</p>
+                        <p class="text-lg leading-relaxed" id="conf-content-${conf.id}">${escapeHtml(conf.content)}</p>
                     </div>
                     
                     <div class="p-5 border-t border-theme flex flex-wrap gap-3">
@@ -652,6 +662,75 @@
                     }
                 } else {
                     alert(result.message || 'Erreur lors de la publication');
+                }
+            } catch (error) {
+                console.error('❌ Error:', error);
+                alert('Erreur de connexion');
+            }
+        }
+
+        // ========== SUPPRIMER CONFIDENCE ==========
+        async function deleteConfidence(confidenceId) {
+            if (!confirm('Êtes-vous sûr de vouloir supprimer cette confidence ?')) {
+                return;
+            }
+            
+            console.log('📡 Frontend → API: Deleting confidence', confidenceId);
+            
+            try {
+                const response = await fetch(`/api/confidences/${confidenceId}`, {
+                    method: 'DELETE',
+                    headers: {
+                        'X-User-Id': currentUserId
+                    }
+                });
+                
+                const result = await response.json();
+                console.log('✅ API → Frontend:', result);
+                
+                if (result.success) {
+                    await loadConfidences();
+                } else {
+                    alert(result.message || 'Erreur lors de la suppression');
+                }
+            } catch (error) {
+                console.error('❌ Error:', error);
+                alert('Erreur de connexion');
+            }
+        }
+
+        // ========== MODIFIER CONFIDENCE ==========
+        async function editConfidence(confidenceId) {
+            const contentEl = document.getElementById(`conf-content-${confidenceId}`);
+            const currentContent = contentEl.textContent;
+            
+            const newContent = prompt('Modifier votre confidence:', currentContent);
+            
+            if (!newContent || newContent === currentContent) {
+                return;
+            }
+            
+            console.log('📡 Frontend → API: Updating confidence', confidenceId);
+            
+            try {
+                const response = await fetch(`/api/confidences/${confidenceId}`, {
+                    method: 'PUT',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-User-Id': currentUserId
+                    },
+                    body: JSON.stringify({
+                        content: newContent
+                    })
+                });
+                
+                const result = await response.json();
+                console.log('✅ API → Frontend:', result);
+                
+                if (result.success) {
+                    await loadConfidences();
+                } else {
+                    alert(result.message || 'Erreur lors de la modification');
                 }
             } catch (error) {
                 console.error('❌ Error:', error);
