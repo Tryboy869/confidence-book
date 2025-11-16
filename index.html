@@ -117,8 +117,22 @@
                 </div>
                 
                 <div class="bg-surface rounded-2xl shadow-calm p-5">
+                    <h2 class="text-sm font-semibold text-secondary uppercase tracking-wider mb-4">Mon Espace</h2>
+                    <ul class="space-y-2">
+                        <li><button onclick="selectChapter('my-confidences'); return false;" class="flex items-center w-full space-x-3 p-3 rounded-lg hover:bg-blue-50 dark:hover:bg-blue-900/50 group">
+                            <svg class="w-6 h-6 text-secondary group-hover:text-primary" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M15.75 6a3.75 3.75 0 11-7.5 0 3.75 3.75 0 017.5 0zM4.501 20.118a7.5 7.5 0 0114.998 0A17.933 17.933 0 0112 21.75c-2.676 0-5.216-.584-7.499-1.632z" /></svg>
+                            <span class="font-medium text-secondary group-hover:text-primary">Mes Confidences</span>
+                        </button></li>
+                    </ul>
+                </div>
+                
+                <div class="bg-surface rounded-2xl shadow-calm p-5">
                     <h2 class="text-sm font-semibold text-secondary uppercase tracking-wider mb-4">Paramètres</h2>
                     <ul class="space-y-2">
+                        <li><button onclick="requestNotificationPermission()" class="flex items-center w-full space-x-3 p-3 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 group">
+                            <svg class="w-6 h-6 text-secondary group-hover:text-primary" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M14.857 17.082a23.848 23.848 0 005.454-1.31A8.967 8.967 0 0118 9.75v-.7V9A6 6 0 006 9v.75a8.967 8.967 0 01-2.312 6.022c1.733.64 3.56 1.085 5.455 1.31m5.714 0a24.255 24.255 0 01-5.714 0m5.714 0a3 3 0 11-5.714 0" /></svg>
+                            <span class="font-medium text-secondary group-hover:text-primary">Activer Notifications</span>
+                        </button></li>
                         <li><button onclick="showModal('settings-modal')" class="flex items-center w-full space-x-3 p-3 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 group">
                             <svg class="w-6 h-6 text-secondary group-hover:text-primary" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M10.5 6h9.75M10.5 6a1.5 1.5 0 11-3 0m3 0a1.5 1.5 0 10-3 0M3.75 6H7.5m3 12h9.75m-9.75 0a1.5 1.5 0 01-3 0m3 0a1.5 1.5 0 00-3 0M3.75 18H7.5m3-6h9.75m-9.75 0a1.5 1.5 0 01-3 0m3 0a1.5 1.5 0 00-3 0M3.75 12H7.5" /></svg>
                             <span class="font-medium text-secondary group-hover:text-primary">Paramètres</span>
@@ -335,6 +349,18 @@
         async function enterApp() {
             console.log('📡 Frontend → API: Entering app anonymously');
             
+            // Vérifier si l'utilisateur a déjà un ID sauvegardé
+            let savedUserId = localStorage.getItem('confidence_user_id');
+            
+            if (savedUserId) {
+                console.log('✅ User ID found in localStorage:', savedUserId);
+                currentUserId = savedUserId;
+                showView('app-view');
+                await loadConfidences();
+                return;
+            }
+            
+            // Sinon, créer un nouveau user
             try {
                 const response = await fetch('/api/auth/anonymous', {
                     method: 'POST'
@@ -345,6 +371,11 @@
                 
                 if (result.success) {
                     currentUserId = result.userId;
+                    
+                    // ✅ SAUVEGARDER L'ID DANS LOCALSTORAGE
+                    localStorage.setItem('confidence_user_id', currentUserId);
+                    console.log('💾 User ID saved to localStorage');
+                    
                     showView('app-view');
                     await loadConfidences();
                 } else {
@@ -357,9 +388,12 @@
         }
 
         function logout() {
+            // Supprimer l'ID du localStorage
+            localStorage.removeItem('confidence_user_id');
             currentUserId = null;
             showView('auth-view');
             hideModal('settings-modal');
+            console.log('🚪 User logged out, ID removed from localStorage');
         }
 
         // ========== RENDER CHAPITRES ==========
