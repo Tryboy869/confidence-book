@@ -43,6 +43,31 @@ export class ConfidenceBookService {
       )
     `);
 
+    // Table des appareils (device fingerprints)
+    await this.db.execute(`
+      CREATE TABLE IF NOT EXISTS devices (
+        device_id TEXT PRIMARY KEY,
+        user_id TEXT NOT NULL,
+        last_seen INTEGER NOT NULL,
+        FOREIGN KEY (user_id) REFERENCES users(id)
+      )
+    `);
+
+    // Table des notifications
+    await this.db.execute(`
+      CREATE TABLE IF NOT EXISTS notifications (
+        id TEXT PRIMARY KEY,
+        user_id TEXT NOT NULL,
+        confidence_id TEXT,
+        type TEXT NOT NULL,
+        message TEXT NOT NULL,
+        read INTEGER DEFAULT 0,
+        created_at INTEGER NOT NULL,
+        FOREIGN KEY (user_id) REFERENCES users(id),
+        FOREIGN KEY (confidence_id) REFERENCES confidences(id)
+      )
+    `);
+
     // Table des confidences
     await this.db.execute(`
       CREATE TABLE IF NOT EXISTS confidences (
@@ -103,6 +128,58 @@ export class ConfidenceBookService {
 
   // ========== AUTHENTIFICATION ==========
   
+  async authenticateDevice(deviceId) {
+    const now = Date.now();
+    
+    // Vérifier si ce device existe déjà
+    const deviceResult = await this.db.execute({
+      sql: 'SELECT user_id FROM devices WHERE device_id = ?',
+      args: [deviceId]
+    });
+    
+    if (deviceResult.rows.length > 0) {
+      // Device existe, récupérer le user_id
+      const userId = deviceResult.rows[0].user_id;
+      
+      // Mettre à jour last_seen
+      await this.db.execute({
+        sql: 'UPDATE devices SET last_seen = ? WHERE device_id = ?',
+        args: [now, deviceId]
+      });
+      
+      console.log('[BACKEND] Existing device:', deviceId, '→ User:', userId);
+      
+      return {
+        success: true,
+        userId,
+        isNew: false
+      };
+    }
+    
+    // Sinon, créer un nouveau user + device
+    const userId = 'user_' + Math.random().toString(36).substr(2, 9);
+    
+    // Créer l'utilisateur
+    await this.db.execute({
+      sql: 'INSERT INTO users (id, created_at) VALUES (?, ?)',
+      args: [userId, now]
+    });
+    
+    // Lier le device à l'utilisateur
+    await this.db.execute({
+      sql: 'INSERT INTO devices (device_id, user_id, last_seen) VALUES (?, ?, ?)',
+      args: [deviceId, userId, now]
+    });
+    
+    console.log('[BACKEND] New device:', deviceId, '→ New user:', userId);
+    
+    return {
+      success: true,
+      userId,
+      isNew: true
+    };
+  }
+
   async createAnonymousUser() {
     const userId = 'user_' + Math.random().toString(36).substr(2, 9);
     const now = Date.now();
@@ -376,6 +453,69 @@ export class ConfidenceBookService {
     }
   }
 
+  // ========== NOTIFICATIONS ==========
+  
+  async createNotification(userId, confidenceId, type, message) {
+    const notificationId = 'notif_' + Math.random().toString(36).substr(2, 9);
+    const now = Date.now();
+    
+    await this.db.execute({
+      sql: 'INSERT INTO notifications (id, user_id, confidence_id, type, message, created_at) VALUES (?, ?, ?, ?, ?, ?)',
+      args: [notificationId, userId, confidenceId, type, message, now]
+    });
+    
+    console.log('[BACKEND] Notification created:', notificationId);
+  }
+
+  async getNotifications(userId) {
+    const result = await this.db.execute({
+      sql: `
+        SELECT n.*, c.content as confidence_preview 
+        FROM notifications n
+        LEFT JOIN confidences c ON n.confidence_id = c.id
+        WHERE n.user_id = ?
+        ORDER BY n.created_at DESC
+        LIMIT 50
+      `,
+      args: [userId]
+    });
+    
+    console.log(`[BACKEND] Retrieved ${result.rows.length} notifications for user ${userId}`);
+    
+    return {
+      success: true,
+      data: result.rows.map(row => ({
+        id: row.id,
+        type: row.type,
+        message: row.message,
+        read: row.read === 1,
+        created_at: row.created_at,
+        confidence_preview: row.confidence_preview ? row.confidence_preview.substring(0, 50) + '...' : null
+      }))
+    };
+  }
+
+  async markNotificationAsRead(notificationId) {
+    await this.db.execute({
+      sql: 'UPDATE notifications SET read = 1 WHERE id = ?',
+      args: [notificationId]
+    });
+    
+    return { success: true };
+  }
+
+  async getUnreadCount(userId) {
+    const result = await this.db.execute({
+      sql: 'SELECT COUNT(*) as count FROM notifications WHERE user_id = ? AND read = 0',
+      args: [userId]
+    });
+    
+    return {
+      success: true,
+      count: result.rows[0].count
+    };
+  }
+
   async updateConfidence(confidenceId, body, headers) {
     const userId = headers['x-user-id'];
     const { content } = body;
@@ -515,6 +655,27 @@ export class ConfidenceBookService {
     });
     
     console.log('[BACKEND] Response created:', responseId);
+    
+    // Créer une notification pour l'auteur de la confidence
+    const confidenceResult = await this.db.execute({
+      sql: 'SELECT user_id FROM confidences WHERE id = ?',
+      args: [confidenceId]
+    });
+    
+    if (confidenceResult.rows.length > 0) {
+      const authorId = confidenceResult.rows[0].user_id;
+      
+      // Ne pas notifier si c'est l'auteur lui-même qui répond
+      if (authorId !== userId) {
+        await this.createNotification(
+          authorId,
+          confidenceId,
+          'new_response',
+          'Quelqu\'un a répondu à votre confidence avec bienveillance 💙'
+        );
+        console.log('[BACKEND] Notification sent to author:', authorId);
+      }
+    }
     
     return {
       success: true,
