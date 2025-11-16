@@ -8,6 +8,15 @@ export class ConfidenceBookService {
     this.db = null;
     this.aiEndpoint = 'https://api.groq.com/openai/v1/chat/completions';
     this.aiApiKey = process.env.GROQ_API_KEY;
+    
+    // Fallback models (testés et validés via Colab)
+    this.groqModels = [
+      'llama-3.1-8b-instant',                              // ✅ Testé - Rapide
+      'llama-3.3-70b-versatile',                           // ✅ Testé - Puissant
+      'groq/compound',                                     // Groq propriétaire
+      'moonshotai/kimi-k2-instruct',                       // Moonshot AI
+      'qwen/qwen3-32b'                                     // Alibaba Qwen
+    ];
   }
 
   async init() {
@@ -76,6 +85,19 @@ export class ConfidenceBookService {
       )
     `);
 
+    // Table des réactions sur les réponses
+    await this.db.execute(`
+      CREATE TABLE IF NOT EXISTS response_reactions (
+        id TEXT PRIMARY KEY,
+        response_id TEXT NOT NULL,
+        user_id TEXT NOT NULL,
+        type TEXT NOT NULL,
+        created_at INTEGER NOT NULL,
+        FOREIGN KEY (response_id) REFERENCES responses(id),
+        UNIQUE(response_id, user_id, type)
+      )
+    `);
+
     console.log('✅ [BACKEND] Tables created/verified');
   }
 
@@ -107,9 +129,12 @@ export class ConfidenceBookService {
     let sql = `
       SELECT 
         c.*,
-        (SELECT COUNT(*) FROM reactions WHERE confidence_id = c.id AND type = 'reconfortant') as reactions_reconfortant,
-        (SELECT COUNT(*) FROM reactions WHERE confidence_id = c.id AND type = 'utile') as reactions_utile,
-        (SELECT COUNT(*) FROM reactions WHERE confidence_id = c.id AND type = 'repense') as reactions_repense
+        (SELECT COUNT(*) FROM reactions WHERE confidence_id = c.id AND type = 'soutien') as reactions_soutien,
+        (SELECT COUNT(*) FROM reactions WHERE confidence_id = c.id AND type = 'espoir') as reactions_espoir,
+        (SELECT COUNT(*) FROM reactions WHERE confidence_id = c.id AND type = 'compatis') as reactions_compatis,
+        (SELECT COUNT(*) FROM reactions WHERE confidence_id = c.id AND type = 'pas_seul') as reactions_pas_seul,
+        (SELECT COUNT(*) FROM reactions WHERE confidence_id = c.id AND type = 'courage') as reactions_courage,
+        (SELECT COUNT(*) FROM reactions WHERE confidence_id = c.id AND type = 'triste') as reactions_triste
       FROM confidences c
       WHERE c.expires_at > ?
     `;
@@ -135,6 +160,39 @@ export class ConfidenceBookService {
         args: [row.id]
       });
       
+      // Pour chaque réponse, récupérer les réactions
+      const responsesWithReactions = await Promise.all(responsesResult.rows.map(async (resp) => {
+        const reactionsResult = await this.db.execute({
+          sql: `
+            SELECT 
+              (SELECT COUNT(*) FROM response_reactions WHERE response_id = ? AND type = 'soutien') as soutien,
+              (SELECT COUNT(*) FROM response_reactions WHERE response_id = ? AND type = 'espoir') as espoir,
+              (SELECT COUNT(*) FROM response_reactions WHERE response_id = ? AND type = 'compatis') as compatis,
+              (SELECT COUNT(*) FROM response_reactions WHERE response_id = ? AND type = 'pas_seul') as pas_seul,
+              (SELECT COUNT(*) FROM response_reactions WHERE response_id = ? AND type = 'courage') as courage,
+              (SELECT COUNT(*) FROM response_reactions WHERE response_id = ? AND type = 'triste') as triste
+          `,
+          args: [resp.id, resp.id, resp.id, resp.id, resp.id, resp.id]
+        });
+        
+        const reactionCounts = reactionsResult.rows[0];
+        
+        return {
+          id: resp.id,
+          content: resp.content,
+          avatar: resp.avatar,
+          created_at: resp.created_at,
+          reactions: {
+            soutien: Number(reactionCounts.soutien),
+            espoir: Number(reactionCounts.espoir),
+            compatis: Number(reactionCounts.compatis),
+            pas_seul: Number(reactionCounts.pas_seul),
+            courage: Number(reactionCounts.courage),
+            triste: Number(reactionCounts.triste)
+          }
+        };
+      }));
+      
       return {
         id: row.id,
         user_id: row.user_id,
@@ -142,16 +200,14 @@ export class ConfidenceBookService {
         emotion: row.emotion,
         created_at: row.created_at,
         reactions: {
-          reconfortant: Number(row.reactions_reconfortant),
-          utile: Number(row.reactions_utile),
-          repense: Number(row.reactions_repense)
+          soutien: Number(row.reactions_soutien),
+          espoir: Number(row.reactions_espoir),
+          compatis: Number(row.reactions_compatis),
+          pas_seul: Number(row.reactions_pas_seul),
+          courage: Number(row.reactions_courage),
+          triste: Number(row.reactions_triste)
         },
-        responses: responsesResult.rows.map(r => ({
-          id: r.id,
-          content: r.content,
-          avatar: r.avatar,
-          created_at: r.created_at
-        }))
+        responses: responsesWithReactions
       };
     }));
     
@@ -258,6 +314,59 @@ export class ConfidenceBookService {
     console.log('[BACKEND] Confidence deleted:', confidenceId);
     
     return { success: true };
+  }
+
+  // ========== RÉACTIONS SUR RÉPONSES ==========
+  
+  async addResponseReaction(body, headers) {
+    const userId = headers['x-user-id'];
+    const { responseId, reactionType } = body;
+    
+    if (!userId || !responseId || !reactionType) {
+      return { success: false, message: 'Missing required fields' };
+    }
+    
+    try {
+      // Vérifier si l'utilisateur a déjà cette réaction exacte
+      const existing = await this.db.execute({
+        sql: 'SELECT * FROM response_reactions WHERE response_id = ? AND user_id = ? AND type = ?',
+        args: [responseId, userId, reactionType]
+      });
+      
+      if (existing.rows.length > 0) {
+        // Toggle OFF : supprimer la réaction
+        await this.db.execute({
+          sql: 'DELETE FROM response_reactions WHERE response_id = ? AND user_id = ? AND type = ?',
+          args: [responseId, userId, reactionType]
+        });
+        
+        console.log('[BACKEND] Response reaction removed (toggle):', reactionType);
+        return { success: true, action: 'removed' };
+      }
+      
+      // Supprimer toutes les autres réactions de cet utilisateur sur cette réponse
+      await this.db.execute({
+        sql: 'DELETE FROM response_reactions WHERE response_id = ? AND user_id = ?',
+        args: [responseId, userId]
+      });
+      
+      // Ajouter la nouvelle réaction
+      const reactionId = 'resp_react_' + Math.random().toString(36).substr(2, 9);
+      const now = Date.now();
+      
+      await this.db.execute({
+        sql: 'INSERT INTO response_reactions (id, response_id, user_id, type, created_at) VALUES (?, ?, ?, ?, ?)',
+        args: [reactionId, responseId, userId, reactionType, now]
+      });
+      
+      console.log('[BACKEND] Response reaction added:', reactionType);
+      
+      return { success: true, action: 'added' };
+      
+    } catch (error) {
+      console.error('[BACKEND] Response reaction error:', error);
+      return { success: false, message: 'Database error' };
+    }
   }
 
   async updateConfidence(confidenceId, body, headers) {
@@ -420,92 +529,119 @@ export class ConfidenceBookService {
       };
     }
     
-    try {
-      const prompt = type === 'confidence' 
-        ? this.getModerationPromptConfidence(content)
-        : this.getModerationPromptResponse(content);
+    const prompt = type === 'confidence' 
+      ? this.getModerationPromptConfidence(content)
+      : this.getModerationPromptResponse(content);
+    
+    // Essayer chaque modèle dans l'ordre jusqu'à ce qu'un fonctionne
+    for (let i = 0; i < this.groqModels.length; i++) {
+      const model = this.groqModels[i];
       
-      console.log('[BACKEND] Calling Groq API for moderation...');
-      
-      const response = await fetch(this.aiEndpoint, {
-        method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${this.aiApiKey}`,
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({
-          model: 'llama-3.1-70b-versatile',
-          messages: [
-            { 
-              role: 'system', 
-              content: 'Tu es un modérateur bienveillant pour Confidence Book. Réponds UNIQUEMENT par APPROVED ou REJECTED: raison.' 
-            },
-            { 
-              role: 'user', 
-              content: prompt 
-            }
-          ],
-          temperature: 0.2,
-          max_tokens: 200,
-          top_p: 1,
-          stream: false
-        })
-      });
-      
-      if (!response.ok) {
-        const errorText = await response.text();
-        console.error('[BACKEND] AI moderation failed:', response.status, errorText);
-        // Fail-open : approuver si l'API ne répond pas
+      try {
+        console.log(`[BACKEND] Calling Groq API (model: ${model})...`);
+        
+        const response = await fetch(this.aiEndpoint, {
+          method: 'POST',
+          headers: {
+            'Authorization': `Bearer ${this.aiApiKey}`,
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify({
+            model: model,
+            messages: [
+              { 
+                role: 'system', 
+                content: 'Tu es un modérateur bienveillant pour Confidence Book. Réponds UNIQUEMENT par APPROVED ou REJECTED: raison.' 
+              },
+              { 
+                role: 'user', 
+                content: prompt 
+              }
+            ],
+            temperature: 0.2,
+            max_tokens: 200,
+            top_p: 1,
+            stream: false
+          })
+        });
+        
+        if (!response.ok) {
+          const errorText = await response.text();
+          console.error(`[BACKEND] Model ${model} failed:`, response.status, errorText);
+          
+          // Si c'est le dernier modèle, fail-open
+          if (i === this.groqModels.length - 1) {
+            console.log('[BACKEND] All models failed, approving by default (fail-open)');
+            return {
+              approved: true,
+              score: 0.7,
+              warning: false,
+              message: 'Moderation service unavailable'
+            };
+          }
+          
+          // Sinon essayer le prochain modèle
+          continue;
+        }
+        
+        const data = await response.json();
+        const aiResponse = data.choices[0].message.content.trim();
+        
+        console.log(`[BACKEND] AI Response (${model}):`, aiResponse);
+        
+        // Parser la réponse IA
+        if (aiResponse.startsWith('APPROVED')) {
+          const warningMatch = aiResponse.match(/WARNING: (.+)/);
+          return {
+            approved: true,
+            score: 0.8,
+            warning: !!warningMatch,
+            message: warningMatch ? warningMatch[1] : 'Contenu validé'
+          };
+        } else if (aiResponse.startsWith('REJECTED')) {
+          const reason = aiResponse.replace('REJECTED:', '').trim();
+          return {
+            approved: false,
+            score: 0.2,
+            warning: false,
+            message: reason || 'Contenu non conforme aux règles de bienveillance'
+          };
+        }
+        
+        // Si format inattendu mais modèle fonctionne, approuver
         return {
           approved: true,
           score: 0.7,
           warning: false,
-          message: 'Moderation service unavailable'
+          message: 'Moderation completed'
         };
+        
+      } catch (error) {
+        console.error(`[BACKEND] Model ${model} error:`, error.message);
+        
+        // Si c'est le dernier modèle, fail-open
+        if (i === this.groqModels.length - 1) {
+          console.log('[BACKEND] All models failed, approving by default (fail-open)');
+          return {
+            approved: true,
+            score: 0.7,
+            warning: false,
+            message: 'Moderation error, content approved by default'
+          };
+        }
+        
+        // Sinon essayer le prochain
+        continue;
       }
-      
-      const data = await response.json();
-      const aiResponse = data.choices[0].message.content.trim();
-      
-      console.log('[BACKEND] AI Response:', aiResponse);
-      
-      // Parser la réponse IA
-      if (aiResponse.startsWith('APPROVED')) {
-        const warningMatch = aiResponse.match(/WARNING: (.+)/);
-        return {
-          approved: true,
-          score: 0.8,
-          warning: !!warningMatch,
-          message: warningMatch ? warningMatch[1] : 'Contenu validé'
-        };
-      } else if (aiResponse.startsWith('REJECTED')) {
-        const reason = aiResponse.replace('REJECTED:', '').trim();
-        return {
-          approved: false,
-          score: 0.2,
-          warning: false,
-          message: reason || 'Contenu non conforme aux règles de bienveillance'
-        };
-      }
-      
-      // Si format inattendu, approuver par défaut
-      return {
-        approved: true,
-        score: 0.7,
-        warning: false,
-        message: 'Moderation completed'
-      };
-      
-    } catch (error) {
-      console.error('[BACKEND] AI moderation error:', error.message);
-      // Fail-open : ne jamais bloquer les utilisateurs en cas d'erreur
-      return {
-        approved: true,
-        score: 0.7,
-        warning: false,
-        message: 'Moderation error, content approved by default'
-      };
     }
+    
+    // Fallback final (ne devrait jamais arriver ici)
+    return {
+      approved: true,
+      score: 0.7,
+      warning: false,
+      message: 'Moderation completed with fallback'
+    };
   }
 
   getModerationPromptConfidence(content) {
