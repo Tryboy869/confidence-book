@@ -64,6 +64,56 @@ app.post('/api/auth/anonymous', async (req, res) => {
   }
 });
 
+// Authentification par device
+app.post('/api/auth/device', async (req, res) => {
+  try {
+    console.log('📡 [API GATEWAY] POST /api/auth/device');
+    const { deviceId } = req.body;
+    const result = await backend.authenticateDevice(deviceId);
+    console.log(`✅ [API GATEWAY] Device authenticated: ${deviceId} → ${result.userId}`);
+    res.json(result);
+  } catch (error) {
+    console.error('❌ [API GATEWAY] Error:', error);
+    res.status(500).json({ success: false, message: error.message });
+  }
+});
+
+// Récupérer notifications
+app.get('/api/notifications', async (req, res) => {
+  try {
+    const userId = req.headers['x-user-id'];
+    console.log(`📡 [API GATEWAY] GET /api/notifications for user ${userId}`);
+    const result = await backend.getNotifications(userId);
+    res.json(result);
+  } catch (error) {
+    console.error('❌ [API GATEWAY] Error:', error);
+    res.status(500).json({ success: false, message: error.message });
+  }
+});
+
+// Compter notifications non lues
+app.get('/api/notifications/unread', async (req, res) => {
+  try {
+    const userId = req.headers['x-user-id'];
+    const result = await backend.getUnreadCount(userId);
+    res.json(result);
+  } catch (error) {
+    console.error('❌ [API GATEWAY] Error:', error);
+    res.status(500).json({ success: false, message: error.message });
+  }
+});
+
+// Marquer notification comme lue
+app.put('/api/notifications/:id/read', async (req, res) => {
+  try {
+    const result = await backend.markNotificationAsRead(req.params.id);
+    res.json(result);
+  } catch (error) {
+    console.error('❌ [API GATEWAY] Error:', error);
+    res.status(500).json({ success: false, message: error.message });
+  }
+});
+
 // Récupérer confidences
 app.get('/api/confidences', async (req, res) => {
   try {
