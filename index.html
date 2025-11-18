@@ -8,27 +8,16 @@
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
     <style>
         body { font-family: 'Inter', sans-serif; }
-        .theme-calm {
-            --bg: #f8f9fa; --surface: #fff; --primary: #3b82f6; --text: #1f2937; --text-sec: #6b7280; --border: #e5e7eb;
-        }
-        .dark .theme-calm {
-            --bg: #111827; --surface: #1f2937; --primary: #60a5fa; --text: #f9fafb; --text-sec: #9ca3af; --border: #374151;
-        }
-        body { background: var(--bg); color: var(--text); }
-        .bg-surface { background: var(--surface); }
-        .text-primary { color: var(--primary); }
-        .text-secondary { color: var(--text-sec); }
-        .border-theme { border-color: var(--border); }
     </style>
 </head>
-<body class="theme-calm">
+<body class="bg-gray-50 dark:bg-gray-900 text-gray-900 dark:text-gray-100">
 
 <!-- AUTH VIEW -->
 <div id="auth-view" class="flex items-center justify-center min-h-screen p-4">
-    <div class="w-full max-w-md text-center bg-surface rounded-2xl shadow-lg p-12">
+    <div class="w-full max-w-md text-center bg-white dark:bg-gray-800 rounded-2xl shadow-lg p-12">
         <div class="text-6xl mb-6">🌌</div>
-        <h1 class="text-3xl font-bold text-primary mb-3">Confidence Book</h1>
-        <p class="text-secondary text-lg mb-8">Personne ne doit rester seul face à son histoire.</p>
+        <h1 class="text-3xl font-bold text-blue-500 mb-3">Confidence Book</h1>
+        <p class="text-gray-600 dark:text-gray-400 text-lg mb-8">Personne ne doit rester seul face à son histoire.</p>
         <button onclick="enterApp()" class="w-full bg-blue-500 text-white font-semibold py-3 px-6 rounded-lg hover:bg-blue-600 transition">
             Entrer anonymement
         </button>
@@ -38,19 +27,17 @@
 <!-- APP VIEW -->
 <div id="app-view" class="hidden min-h-screen">
     <!-- Header Mobile -->
-    <header class="md:hidden bg-surface shadow sticky top-0 z-20 flex items-center justify-between p-4 border-b border-theme">
-        <h1 class="text-xl font-bold text-primary">Confidence Book</h1>
+    <header class="md:hidden bg-white dark:bg-gray-800 shadow sticky top-0 z-20 flex items-center justify-between p-4 border-b border-gray-200 dark:border-gray-700">
+        <h1 class="text-xl font-bold text-blue-500">Confidence Book</h1>
         <div class="flex gap-3">
-            <!-- Toggle Theme -->
-            <button onclick="toggleTheme()" id="theme-btn" class="p-2 rounded-full hover:bg-gray-100 dark:hover:bg-gray-700">
-                <svg id="sun-icon" class="w-6 h-6 hidden dark:block" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M12 3v2.25m6.364.386l-1.591 1.591M21 12h-2.25m-.386 6.364l-1.591-1.591M12 18.75V21m-4.773-4.227l-1.591 1.591M5.25 12H3m4.227-4.773L5.636 5.636M15.75 12a3.75 3.75 0 11-7.5 0 3.75 3.75 0 017.5 0z" /></svg>
-                <svg id="moon-icon" class="w-6 h-6 block dark:hidden" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M21.752 15.002A9.718 9.718 0 0118 15.75c-5.385 0-9.75-4.365-9.75-9.75 0-1.33.266-2.597.748-3.752A9.753 9.753 0 003 11.25C3 16.635 7.365 21 12.75 21a9.753 9.753 0 009.002-5.998z" /></svg>
+            <button onclick="toggleTheme()" class="p-2 rounded-full hover:bg-gray-100 dark:hover:bg-gray-700">
+                <svg id="theme-icon" class="w-6 h-6" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M21.752 15.002A9.718 9.718 0 0118 15.75c-5.385 0-9.75-4.365-9.75-9.75 0-1.33.266-2.597.748-3.752A9.753 9.753 0 003 11.25C3 16.635 7.365 21 12.75 21a9.753 9.753 0 009.002-5.998z" /></svg>
             </button>
             <button onclick="showModal('notif-modal')" class="p-2 rounded-full relative hover:bg-gray-100 dark:hover:bg-gray-700">
                 <svg class="w-6 h-6" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M14.857 17.082a23.848 23.848 0 005.454-1.31A8.967 8.967 0 0118 9.75v-.7V9A6 6 0 006 9v.75a8.967 8.967 0 01-2.312 6.022c1.733.64 3.56 1.085 5.455 1.31m5.714 0a24.255 24.255 0 01-5.714 0m5.714 0a3 3 0 11-5.714 0" /></svg>
                 <span id="badge" class="hidden absolute top-0 right-0 bg-red-500 text-white text-xs rounded-full w-5 h-5 flex items-center justify-center"></span>
             </button>
-            <button onclick="showModal('post-modal')" class="p-2 rounded-full bg-blue-500 text-white">
+            <button onclick="showModal('post-modal')" class="p-2 rounded-full bg-blue-500 text-white hover:bg-blue-600">
                 <svg class="w-6 h-6" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M16.862 4.487l1.687-1.688a1.875 1.875 0 112.652 2.652L10.582 16.07a4.5 4.5 0 01-1.897 1.13L6 18l.8-2.685a4.5 4.5 0 011.13-1.897l8.932-8.931zm0 0L19.5 7.125M18 14v4.75A2.25 2.25 0 0115.75 21H5.25A2.25 2.25 0 013 18.75V8.25A2.25 2.25 0 015.25 6H10" /></svg>
             </button>
         </div>
@@ -58,30 +45,75 @@
 
     <!-- Main -->
     <main class="max-w-2xl mx-auto p-4">
+        <!-- Filters -->
+        <div class="bg-white dark:bg-gray-800 rounded-xl shadow p-4 mb-6">
+            <div class="flex gap-2 overflow-x-auto">
+                <button onclick="filterChapter('all')" data-filter="all" class="filter-btn whitespace-nowrap text-sm bg-blue-500 text-white px-4 py-2 rounded-full">
+                    🌐 Tous
+                </button>
+                <button onclick="filterChapter('ruptures')" data-filter="ruptures" class="filter-btn whitespace-nowrap text-sm bg-gray-200 dark:bg-gray-700 px-4 py-2 rounded-full">
+                    💔 Ruptures
+                </button>
+                <button onclick="filterChapter('isolement')" data-filter="isolement" class="filter-btn whitespace-nowrap text-sm bg-gray-200 dark:bg-gray-700 px-4 py-2 rounded-full">
+                    😔 Isolement
+                </button>
+                <button onclick="filterChapter('traumas')" data-filter="traumas" class="filter-btn whitespace-nowrap text-sm bg-gray-200 dark:bg-gray-700 px-4 py-2 rounded-full">
+                    🔥 Traumas
+                </button>
+                <button onclick="filterChapter('stress')" data-filter="stress" class="filter-btn whitespace-nowrap text-sm bg-gray-200 dark:bg-gray-700 px-4 py-2 rounded-full">
+                    🧠 Stress
+                </button>
+                <button onclick="filterChapter('espoir')" data-filter="espoir" class="filter-btn whitespace-nowrap text-sm bg-gray-200 dark:bg-gray-700 px-4 py-2 rounded-full">
+                    🤝 Espoir
+                </button>
+            </div>
+        </div>
+
         <!-- Publish Box -->
-        <div class="bg-surface rounded-xl shadow p-4 mb-6">
-            <button onclick="showModal('post-modal')" class="w-full text-left bg-gray-100 dark:bg-gray-700 rounded-full p-3 px-5 text-secondary hover:bg-gray-200 transition">
+        <div class="bg-white dark:bg-gray-800 rounded-xl shadow p-4 mb-6">
+            <button onclick="showModal('post-modal')" class="w-full text-left bg-gray-100 dark:bg-gray-700 rounded-full p-3 px-5 text-gray-600 dark:text-gray-400 hover:bg-gray-200 dark:hover:bg-gray-600 transition">
                 Exprimez-vous en toute sécurité...
             </button>
         </div>
 
         <!-- Confidences List -->
         <div id="list"></div>
+
+        <!-- Donation Banner -->
+        <div class="bg-gradient-to-r from-blue-500 to-purple-600 text-white rounded-xl shadow-lg p-6 mb-6 text-center">
+            <h3 class="text-xl font-bold mb-2">💙 Soutenez Confidence Book</h3>
+            <p class="text-sm opacity-90 mb-4">Aidez-nous à maintenir cet espace bienveillant et gratuit pour tous</p>
+            <div class="flex flex-col gap-2">
+                <a href="mailto:nexusstudio100@gmail.com" class="bg-white text-blue-600 font-semibold py-2 px-4 rounded-lg hover:bg-gray-100 transition">
+                    ✉️ Contact Email
+                </a>
+                <a href="https://wa.me/2290169056283" target="_blank" class="bg-green-500 text-white font-semibold py-2 px-4 rounded-lg hover:bg-green-600 transition">
+                    💚 WhatsApp / Mobile Money
+                </a>
+            </div>
+        </div>
     </main>
+
+    <!-- Footer -->
+    <footer class="bg-white dark:bg-gray-800 border-t border-gray-200 dark:border-gray-700 py-6 text-center">
+        <p class="text-sm text-gray-600 dark:text-gray-400">
+            Powered by <span class="font-semibold text-blue-500">Nexus Studio</span>
+        </p>
+    </footer>
 </div>
 
 <!-- POST MODAL -->
 <div id="post-modal" class="hidden fixed inset-0 z-50 flex items-center justify-center p-4">
     <div onclick="hideModal('post-modal')" class="absolute inset-0 bg-black/50"></div>
-    <div class="bg-surface rounded-xl shadow-lg w-full max-w-2xl z-10 p-6">
-        <h2 id="modal-title" class="text-2xl font-bold text-primary mb-4">Écrire une confidence</h2>
-        <textarea id="text" rows="8" class="w-full p-4 rounded-lg border border-theme bg-surface text-secondary" placeholder="Votre histoire..."></textarea>
+    <div class="bg-white dark:bg-gray-800 rounded-xl shadow-lg w-full max-w-2xl z-10 p-6">
+        <h2 id="modal-title" class="text-2xl font-bold text-blue-500 mb-4">Écrire une confidence</h2>
+        <textarea id="text" rows="8" class="w-full p-4 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100" placeholder="Votre histoire..."></textarea>
         <div class="mt-4">
-            <p class="text-sm text-secondary mb-2">Tonalité :</p>
+            <p class="text-sm text-gray-600 dark:text-gray-400 mb-2">Tonalité :</p>
             <div id="emotions" class="flex flex-wrap gap-2"></div>
         </div>
         <div class="flex justify-end gap-4 mt-6">
-            <button onclick="hideModal('post-modal')" class="text-secondary">Annuler</button>
+            <button onclick="hideModal('post-modal')" class="text-gray-600 dark:text-gray-400">Annuler</button>
             <button id="submit-btn" onclick="publish()" class="bg-blue-500 text-white px-6 py-2 rounded-lg hover:bg-blue-600">Publier</button>
         </div>
     </div>
@@ -90,8 +122,8 @@
 <!-- NOTIF MODAL -->
 <div id="notif-modal" class="hidden fixed inset-0 z-50 flex items-center justify-center p-4">
     <div onclick="hideModal('notif-modal')" class="absolute inset-0 bg-black/50"></div>
-    <div class="bg-surface rounded-xl shadow-lg w-full max-w-lg z-10 p-6 max-h-[80vh] overflow-y-auto">
-        <h2 class="text-2xl font-bold text-primary mb-4">Notifications</h2>
+    <div class="bg-white dark:bg-gray-800 rounded-xl shadow-lg w-full max-w-lg z-10 p-6 max-h-[80vh] overflow-y-auto">
+        <h2 class="text-2xl font-bold text-blue-500 mb-4">Notifications</h2>
         <div id="notif-list"></div>
     </div>
 </div>
@@ -101,6 +133,7 @@ let userId = null;
 let deviceId = null;
 let emotion = null;
 let editingId = null;
+let currentFilter = 'all';
 
 const CHAPTERS = [
     { id: 'ruptures', emoji: '💔', name: 'Ruptures', color: 'red' },
@@ -119,6 +152,28 @@ const REACTIONS = [
     { id: 'courage', emoji: '🙌🏾', label: 'Courage' },
     { id: 'triste', emoji: '💔', label: 'Oh que c\'est triste' }
 ];
+
+// Theme
+function toggleTheme() {
+    document.documentElement.classList.toggle('dark');
+    localStorage.setItem('theme', document.documentElement.classList.contains('dark') ? 'dark' : 'light');
+    updateThemeIcon();
+}
+
+function updateThemeIcon() {
+    const icon = document.getElementById('theme-icon');
+    if (document.documentElement.classList.contains('dark')) {
+        icon.innerHTML = '<path stroke-linecap="round" stroke-linejoin="round" d="M12 3v2.25m6.364.386l-1.591 1.591M21 12h-2.25m-.386 6.364l-1.591-1.591M12 18.75V21m-4.773-4.227l-1.591 1.591M5.25 12H3m4.227-4.773L5.636 5.636M15.75 12a3.75 3.75 0 11-7.5 0 3.75 3.75 0 017.5 0z" />';
+    } else {
+        icon.innerHTML = '<path stroke-linecap="round" stroke-linejoin="round" d="M21.752 15.002A9.718 9.718 0 0118 15.75c-5.385 0-9.75-4.365-9.75-9.75 0-1.33.266-2.597.748-3.752A9.753 9.753 0 003 11.25C3 16.635 7.365 21 12.75 21a9.753 9.753 0 009.002-5.998z" />';
+    }
+}
+
+// Init theme
+if (localStorage.getItem('theme') === 'dark' || (!localStorage.getItem('theme') && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
+    document.documentElement.classList.add('dark');
+}
+updateThemeIcon();
 
 // Device ID
 async function generateDeviceId() {
@@ -167,10 +222,25 @@ async function enterApp() {
     setInterval(loadNotifications, 30000);
 }
 
+// Filters
+function filterChapter(chapter) {
+    currentFilter = chapter;
+    document.querySelectorAll('.filter-btn').forEach(btn => {
+        if (btn.dataset.filter === chapter) {
+            btn.classList.remove('bg-gray-200', 'dark:bg-gray-700');
+            btn.classList.add('bg-blue-500', 'text-white');
+        } else {
+            btn.classList.remove('bg-blue-500', 'text-white');
+            btn.classList.add('bg-gray-200', 'dark:bg-gray-700');
+        }
+    });
+    loadConfidences();
+}
+
 // Emotions
 function renderEmotions() {
     const html = CHAPTERS.map(ch => `
-        <button onclick="selectEmotion('${ch.id}')" data-id="${ch.id}" class="emotion-btn border-2 border-gray-300 text-sm rounded-full py-2 px-4 hover:border-blue-500">
+        <button onclick="selectEmotion('${ch.id}')" data-id="${ch.id}" class="emotion-btn border-2 border-gray-300 dark:border-gray-600 text-sm rounded-full py-2 px-4 hover:border-blue-500">
             ${ch.emoji} ${ch.name}
         </button>
     `).join('');
@@ -240,7 +310,8 @@ async function del(id) {
 
 // Load
 async function loadConfidences() {
-    const r = await fetch('/api/confidences');
+    const url = currentFilter === 'all' ? '/api/confidences' : `/api/confidences?chapter=${currentFilter}`;
+    const r = await fetch(url);
     const data = await r.json();
     
     const html = data.data.map(c => {
@@ -248,25 +319,25 @@ async function loadConfidences() {
         const owner = c.user_id === userId;
         
         return `
-            <div class="bg-surface rounded-xl shadow p-5 mb-4">
+            <div id="conf-${c.id}" class="bg-white dark:bg-gray-800 rounded-xl shadow p-5 mb-4">
                 <div class="flex items-center justify-between mb-3">
                     <div class="flex items-center gap-3">
-                        <div class="w-10 h-10 rounded-full bg-${ch.color}-100 flex items-center justify-center">
+                        <div class="w-10 h-10 rounded-full bg-${ch.color}-100 dark:bg-${ch.color}-800 flex items-center justify-center">
                             ${ch.emoji}
                         </div>
                         <div>
-                            <p class="text-xs text-secondary">${ch.name}</p>
+                            <p class="text-xs text-gray-600 dark:text-gray-400">${ch.name}</p>
                         </div>
                     </div>
                     ${owner ? `<div class="flex gap-2">
-                        <button onclick="edit('${c.id}', \`${c.content.replace(/`/g, '\\`')}\`)" class="text-xs text-blue-500">✏️ Modifier</button>
+                        <button onclick="edit('${c.id}', \`${c.content.replace(/`/g, '\\`')}\`)" class="text-xs text-blue-500">✏️</button>
                         <button onclick="del('${c.id}')" class="text-xs text-red-500">🗑️</button>
                     </div>` : ''}
                 </div>
                 <p class="text-lg mb-4">${c.content}</p>
-                <div class="flex flex-wrap gap-2 border-t border-theme pt-4">
+                <div class="flex flex-wrap gap-2 border-t border-gray-200 dark:border-gray-700 pt-4">
                     ${REACTIONS.map(r => `
-                        <button onclick="react('${c.id}', '${r.id}')" class="text-xs border border-theme rounded-full py-1 px-3 hover:border-blue-500">
+                        <button onclick="react('${c.id}', '${r.id}')" class="text-xs border border-gray-300 dark:border-gray-600 rounded-full py-1 px-3 hover:border-blue-500">
                             ${r.emoji} ${c.reactions[r.id] || 0}
                         </button>
                     `).join('')}
@@ -275,23 +346,23 @@ async function loadConfidences() {
                     ${c.responses.map(resp => `
                         <div class="flex gap-3">
                             <div class="text-2xl">${resp.avatar}</div>
-                            <div class="flex-1 bg-gray-50 dark:bg-gray-700 rounded-xl p-3">
+                            <div class="flex-1 bg-gray-100 dark:bg-gray-700 rounded-xl p-3">
                                 <p class="text-sm text-gray-900 dark:text-gray-100">${resp.content}</p>
                                 <div class="flex gap-2 mt-2">
-                                    <button onclick="reactResp('${resp.id}', 'soutien')" class="text-xs text-gray-700 dark:text-gray-300 hover:text-blue-500">🤝🏾 ${resp.reactions.soutien || 0}</button>
-                                    <button onclick="reactResp('${resp.id}', 'espoir')" class="text-xs text-gray-700 dark:text-gray-300 hover:text-orange-500">🔥 ${resp.reactions.espoir || 0}</button>
-                                    <button onclick="reactResp('${resp.id}', 'compatis')" class="text-xs text-gray-700 dark:text-gray-300 hover:text-purple-500">🤜🏾🤛🏾 ${resp.reactions.compatis || 0}</button>
+                                    <button onclick="reactResp('${resp.id}', 'soutien')" class="text-xs text-gray-700 dark:text-gray-300">🤝🏾 ${resp.reactions.soutien || 0}</button>
+                                    <button onclick="reactResp('${resp.id}', 'espoir')" class="text-xs text-gray-700 dark:text-gray-300">🔥 ${resp.reactions.espoir || 0}</button>
+                                    <button onclick="reactResp('${resp.id}', 'compatis')" class="text-xs text-gray-700 dark:text-gray-300">🤜🏾🤛🏾 ${resp.reactions.compatis || 0}</button>
                                 </div>
                             </div>
                         </div>
                     `).join('')}
-                    <input id="resp-${c.id}" placeholder="Répondre..." class="w-full bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-gray-100 placeholder-gray-500 dark:placeholder-gray-400 rounded-full p-2 px-4 text-sm border border-gray-200 dark:border-gray-600" onkeypress="if(event.key==='Enter') respond('${c.id}')">
+                    <input id="resp-${c.id}" placeholder="Répondre..." class="w-full bg-gray-100 dark:bg-gray-700 text-gray-900 dark:text-gray-100 rounded-full p-2 px-4 text-sm" onkeypress="if(event.key==='Enter') respond('${c.id}')">
                 </div>
             </div>
         `;
     }).join('');
     
-    document.getElementById('list').innerHTML = html || '<p class="text-center text-secondary py-12">Aucune confidence</p>';
+    document.getElementById('list').innerHTML = html || '<p class="text-center text-gray-600 dark:text-gray-400 py-12">Aucune confidence</p>';
 }
 
 // Reactions
@@ -356,18 +427,25 @@ async function loadNotifications() {
     }
     
     const html = data.data.map(n => `
-        <div onclick="markRead('${n.id}')" class="p-4 rounded-lg ${n.read ? 'bg-gray-100 dark:bg-gray-700' : 'bg-blue-50 dark:bg-blue-900'} mb-2 cursor-pointer">
+        <div onclick="goToConfidence('${n.confidence_id}')" class="p-4 rounded-lg ${n.read ? 'bg-gray-100 dark:bg-gray-700' : 'bg-blue-50 dark:bg-blue-900'} mb-2 cursor-pointer hover:opacity-80 transition">
             <p class="text-sm text-gray-900 dark:text-gray-100">${n.message}</p>
-            <p class="text-xs text-gray-400 mt-1">${new Date(n.created_at).toLocaleDateString('fr-FR')}</p>
+            <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">${new Date(n.created_at).toLocaleDateString('fr-FR')}</p>
         </div>
     `).join('');
     
-    document.getElementById('notif-list').innerHTML = html || '<p class="text-center text-secondary py-6">Aucune notification</p>';
+    document.getElementById('notif-list').innerHTML = html || '<p class="text-center text-gray-600 dark:text-gray-400 py-6">Aucune notification</p>';
 }
 
-async function markRead(id) {
-    await fetch(`/api/notifications/${id}/read`, { method: 'PUT' });
-    loadNotifications();
+async function goToConfidence(confId) {
+    hideModal('notif-modal');
+    
+    // Scroll to confidence
+    const element = document.getElementById(`conf-${confId}`);
+    if (element) {
+        element.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        element.classList.add('ring-4', 'ring-blue-500');
+        setTimeout(() => element.classList.remove('ring-4', 'ring-blue-500'), 2000);
+    }
 }
 
 // Modals
@@ -385,27 +463,6 @@ function hideModal(id) {
         document.getElementById('submit-btn').textContent = 'Publier';
     }
 }
-
-// Theme Toggle
-function toggleTheme() {
-    const html = document.documentElement;
-    if (html.classList.contains('dark')) {
-        html.classList.remove('dark');
-        localStorage.setItem('theme', 'light');
-    } else {
-        html.classList.add('dark');
-        localStorage.setItem('theme', 'dark');
-    }
-}
-
-// Init Theme
-const savedTheme = localStorage.getItem('theme');
-if (savedTheme === 'dark') {
-    document.documentElement.classList.add('dark');
-} else if (savedTheme === 'light') {
-    document.documentElement.classList.remove('dark');
-}
-// Si aucune préférence sauvegardée, on reste en light par défaut
 </script>
 
 </body>
