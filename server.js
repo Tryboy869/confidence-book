@@ -447,6 +447,7 @@ export class ConfidenceBookService {
       success: true,
       data: result.rows.map(r => ({
         id: r.id,
+        confidence_id: r.confidence_id,
         type: r.type,
         message: r.message,
         read: r.is_read === 1,
@@ -478,6 +479,24 @@ export class ConfidenceBookService {
       return { approved: true, score: 0.9, message: 'Dev mode' };
     }
     
+    // Règles de détection d'infos personnelles
+    const personalInfoPatterns = [
+      /\b\d{10,}\b/g, // Numéros de téléphone
+      /\b[\w\.-]+@[\w\.-]+\.\w+\b/g, // Emails
+      /\b\d{1,5}\s+[\w\s]+(?:rue|avenue|boulevard|place)\b/gi, // Adresses
+      /\b(?:né|née|habite|réside|vit)\s+à\s+[\w\s]+\b/gi // Localisation précise
+    ];
+    
+    for (const pattern of personalInfoPatterns) {
+      if (pattern.test(content)) {
+        return {
+          approved: false,
+          score: 0.1,
+          message: 'Votre message contient des informations personnelles (email, numéro, adresse). Pour votre sécurité, veuillez les retirer.'
+        };
+      }
+    }
+    
     for (const model of this.groqModels) {
       try {
         const response = await fetch(this.aiEndpoint, {
@@ -489,7 +508,13 @@ export class ConfidenceBookService {
           body: JSON.stringify({
             model,
             messages: [
-              { role: 'system', content: 'Modérateur bienveillant. Réponds APPROVED ou REJECTED: raison' },
+              { 
+                role: 'system', 
+                content: `Modérateur bienveillant. Règles:
+- REJETER: violence, haine, spam, infos personnelles (noms, adresses, numéros)
+- ACCEPTER: tristesse, peur, vulnérabilité, traumas
+Réponds: APPROVED ou REJECTED: raison` 
+              },
               { role: 'user', content: `Analyse: "${content}"` }
             ],
             temperature: 0.2,
