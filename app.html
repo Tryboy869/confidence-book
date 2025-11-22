@@ -1,0 +1,406 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Confidence Book - Feed</title>
+    
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    
+    <style>
+        body { font-family: 'Inter', sans-serif; }
+        
+        ::-webkit-scrollbar { width: 8px; }
+        ::-webkit-scrollbar-track { background: transparent; }
+        ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 4px; }
+        ::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
+        
+        .dark ::-webkit-scrollbar-thumb { background: #475569; }
+        .dark ::-webkit-scrollbar-thumb:hover { background: #64748b; }
+        
+        * { scrollbar-width: thin; scrollbar-color: #cbd5e1 transparent; }
+        .dark * { scrollbar-color: #475569 transparent; }
+        
+        .theme-calm {
+            --theme-bg: #f8f9fa;
+            --theme-surface: #ffffff;
+            --theme-primary: #3b82f6;
+            --theme-text-primary: #1f2937;
+            --theme-text-secondary: #6b7280;
+            --theme-border: #e5e7eb;
+        }
+        
+        .dark .theme-calm {
+            --theme-bg: #111827;
+            --theme-surface: #1f2937;
+            --theme-primary: #60a5fa;
+            --theme-text-primary: #f9fafb;
+            --theme-text-secondary: #9ca3af;
+            --theme-border: #374151;
+        }
+        
+        body { background-color: var(--theme-bg); color: var(--theme-text-primary); }
+        .bg-surface { background-color: var(--theme-surface); }
+        .bg-primary { background-color: var(--theme-primary); }
+        .text-primary { color: var(--theme-primary); }
+        .text-secondary { color: var(--theme-text-secondary); }
+        .border-theme { border-color: var(--theme-border); }
+        .shadow-calm { box-shadow: 0 4px 12px 0 rgba(0, 0, 0, 0.05); }
+        .dark .shadow-calm { box-shadow: 0 4px 12px 0 rgba(0, 0, 0, 0.1); }
+        
+        /* Animations réactions */
+        @keyframes bounce { 0%, 100% { transform: scale(1); } 50% { transform: scale(1.2); } }
+        @keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.7; } }
+        @keyframes shake { 0%, 100% { transform: translateX(0); } 25% { transform: translateX(-5px); } 75% { transform: translateX(5px); } }
+        
+        .reaction-soutien { animation: bounce 0.5s ease; }
+        .reaction-espoir { animation: pulse 0.5s ease; }
+        .reaction-courage { animation: shake 0.5s ease; }
+    </style>
+</head>
+
+<body class="theme-calm">
+
+    <!-- Header -->
+    <header class="bg-surface shadow-calm sticky top-0 z-20 border-b border-theme">
+        <div class="container mx-auto max-w-7xl px-4 py-4 flex items-center justify-between">
+            <div class="flex items-center space-x-4">
+                <svg class="w-8 h-8 text-primary" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M12 6.042A8.967 8.967 0 006 3.75c-1.052 0-2.062.18-3 .512v14.25A8.987 8.987 0 016 18c2.305 0 4.408.867 6 2.292m0-14.25a8.966 8.966 0 016-2.292c1.052 0 2.062.18 3 .512v14.25A8.987 8.987 0 0018 18a8.967 8.967 0 00-6 2.292m0-14.25v14.25" />
+                </svg>
+                <h1 class="text-xl font-bold text-primary">Confidence Book</h1>
+            </div>
+            
+            <div class="flex items-center space-x-3">
+                <button onclick="showModal('post-modal')" class="bg-primary text-white px-4 py-2 rounded-full font-medium hover:opacity-90 transition">
+                    ✍️ Écrire
+                </button>
+                <a href="/profile.html" class="p-2 rounded-full hover:bg-gray-100 dark:hover:bg-gray-700">
+                    <svg class="w-6 h-6 text-secondary" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M15.75 6a3.75 3.75 0 11-7.5 0 3.75 3.75 0 017.5 0zM4.501 20.118a7.5 7.5 0 0114.998 0A17.933 17.933 0 0112 21.75c-2.676 0-5.216-.584-7.499-1.632z" />
+                    </svg>
+                </a>
+                <a href="/settings.html" class="p-2 rounded-full hover:bg-gray-100 dark:hover:bg-gray-700">
+                    <svg class="w-6 h-6 text-secondary" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M9.594 3.94c.09-.542.56-.94 1.11-.94h2.593c.55 0 1.02.398 1.11.94l.213 1.281c.063.374.313.686.645.87.074.04.147.083.22.127.324.196.72.257 1.075.124l1.217-.456a1.125 1.125 0 011.37.49l1.296 2.247a1.125 1.125 0 01-.26 1.431l-1.003.827c-.293.24-.438.613-.431.992a6.759 6.759 0 010 .255c-.007.378.138.75.43.99l1.005.828c.424.35.534.954.26 1.43l-1.298 2.247a1.125 1.125 0 01-1.369.491l-1.217-.456c-.355-.133-.75-.072-1.076.124a6.57 6.57 0 01-.22.128c-.331.183-.581.495-.644.869l-.213 1.28c-.09.543-.56.941-1.11.941h-2.594c-.55 0-1.02-.398-1.11-.94l-.213-1.281c-.062-.374-.312-.686-.644-.87a6.52 6.52 0 01-.22-.127c-.325-.196-.72-.257-1.076-.124l-1.217.456a1.125 1.125 0 01-1.369-.49l-1.297-2.247a1.125 1.125 0 01.26-1.431l1.004-.827c.292-.24.437-.613.43-.992a6.932 6.932 0 010-.255c.007-.378-.138-.75-.43-.99l-1.004-.828a1.125 1.125 0 01-.26-1.43l1.297-2.247a1.125 1.125 0 011.37-.491l1.216.456c.356.133.751.072 1.076-.124.072-.044.146-.087.22-.128.332-.183.582-.495.644-.869l.214-1.281z" />
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                    </svg>
+                </a>
+            </div>
+        </div>
+    </header>
+
+    <!-- Container Principal -->
+    <div class="container mx-auto max-w-4xl px-4 py-8">
+        
+        <!-- Tabs Chapitres -->
+        <div class="bg-surface rounded-2xl shadow-calm p-4 mb-6 overflow-x-auto">
+            <div class="flex space-x-2 whitespace-nowrap" id="chapters-tabs">
+                <!-- Rempli dynamiquement -->
+            </div>
+        </div>
+
+        <!-- Feed -->
+        <div id="confidences-list" class="space-y-6">
+            <div class="text-center text-secondary py-12">
+                <p>Chargement des confidences...</p>
+            </div>
+        </div>
+
+    </div>
+
+    <!-- Modal Création Confidence -->
+    <div id="post-modal" class="hidden fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm">
+        <div class="bg-surface rounded-2xl shadow-calm w-full max-w-2xl p-6 md:p-8">
+            <div class="flex justify-between items-center mb-6">
+                <h2 class="text-2xl font-semibold text-primary">✍️ Écrire une confidence</h2>
+                <button onclick="hideModal('post-modal')" class="p-2 rounded-full hover:bg-gray-100 dark:hover:bg-gray-700">
+                    <svg class="w-6 h-6" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" />
+                    </svg>
+                </button>
+            </div>
+            
+            <textarea id="confidence-text" rows="8" class="w-full p-4 rounded-lg border border-theme bg-surface text-secondary text-lg focus:outline-none focus:ring-2 focus:ring-primary" placeholder="Partagez votre histoire, votre peur, votre espoir..."></textarea>
+            
+            <div class="mt-6">
+                <label class="text-sm font-medium text-secondary mb-2 block">Choisir la tonalité émotionnelle :</label>
+                <div class="flex flex-wrap gap-2" id="emotion-buttons">
+                    <!-- Rempli dynamiquement -->
+                </div>
+            </div>
+            
+            <div id="moderation-message" class="hidden mt-4 p-4 rounded-lg bg-yellow-50 dark:bg-yellow-900/50 text-yellow-800 dark:text-yellow-200">
+                <!-- Message modération -->
+            </div>
+            
+            <div class="flex justify-end items-center space-x-4 mt-6">
+                <button onclick="hideModal('post-modal')" class="font-medium text-secondary hover:underline">Annuler</button>
+                <button onclick="publishConfidence()" class="bg-primary text-white font-semibold py-2 px-6 rounded-lg hover:opacity-90 transition">
+                    Publier anonymement
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Pop-up Donation (apparaît toutes les 15min) -->
+    <div id="donation-popup" class="hidden fixed bottom-6 left-6 bg-surface rounded-xl shadow-2xl p-4 max-w-sm border border-theme z-30">
+        <div class="flex items-start space-x-3">
+            <div class="text-2xl">💙</div>
+            <div class="flex-1">
+                <p class="font-semibold text-sm mb-1">Soutenez Confidence Book</p>
+                <p class="text-xs text-secondary mb-3">Ce projet est gratuit grâce à vos dons</p>
+                <a href="https://wa.me/22969056283" target="_blank" class="block text-center bg-green-600 text-white text-xs font-medium py-2 rounded-lg hover:bg-green-700 transition">
+                    Faire un don via WhatsApp
+                </a>
+            </div>
+            <button onclick="hideDonationPopup()" class="text-gray-400 hover:text-gray-600">✕</button>
+        </div>
+    </div>
+
+    <!-- JAVASCRIPT -->
+    <script>
+        let currentUserId = localStorage.getItem('confidence_user_id');
+        let currentEmotion = null;
+        let currentChapter = 'all';
+        
+        const CHAPTERS = [
+            { id: 'ruptures', emoji: '💔', name: 'Ruptures', color: 'red' },
+            { id: 'isolement', emoji: '😔', name: 'Isolement', color: 'blue' },
+            { id: 'traumas', emoji: '🔥', name: 'Traumas', color: 'orange' },
+            { id: 'stress', emoji: '🧠', name: 'Stress', color: 'purple' },
+            { id: 'spiritualite', emoji: '🪞', name: 'Spiritualité', color: 'indigo' },
+            { id: 'espoir', emoji: '🤝', name: 'Espoir', color: 'teal' }
+        ];
+
+        const REACTIONS = [
+            { id: 'soutien', label: 'Je te soutiens', emoji: '🤝', color: 'blue' },
+            { id: 'espoir', label: 'Garde espoir', emoji: '🔥', color: 'orange' },
+            { id: 'compatis', label: 'Je compatis', emoji: '🤜🤛', color: 'purple' },
+            { id: 'pas_seul', label: 'T\'es pas seul', emoji: '🫂', color: 'green' },
+            { id: 'courage', label: 'Courage', emoji: '🙌', color: 'yellow' },
+            { id: 'triste', label: 'Oh que c\'est triste', emoji: '💔', color: 'red' }
+        ];
+
+        // Vérifier auth
+        if (!currentUserId) {
+            window.location.href = '/';
+        }
+
+        // Init
+        document.addEventListener('DOMContentLoaded', () => {
+            renderChaptersTabs();
+            renderEmotionButtons();
+            loadConfidences();
+            startDonationTimer();
+        });
+
+        function renderChaptersTabs() {
+            const container = document.getElementById('chapters-tabs');
+            const allTab = `<button onclick="selectChapter('all')" class="px-4 py-2 rounded-full bg-blue-100 dark:bg-blue-900 text-primary font-medium text-sm">🌐 Tous</button>`;
+            const tabs = CHAPTERS.map(ch => `
+                <button onclick="selectChapter('${ch.id}')" class="px-4 py-2 rounded-full hover:bg-gray-100 dark:hover:bg-gray-700 text-secondary font-medium text-sm">
+                    ${ch.emoji} ${ch.name}
+                </button>
+            `).join('');
+            container.innerHTML = allTab + tabs;
+        }
+
+        function renderEmotionButtons() {
+            const container = document.getElementById('emotion-buttons');
+            container.innerHTML = CHAPTERS.map(ch => `
+                <button onclick="selectEmotion('${ch.id}')" data-emotion="${ch.id}" class="emotion-btn flex-auto text-sm border-2 border-gray-300 dark:border-gray-600 text-secondary rounded-full py-2 px-4 hover:border-${ch.color}-500 transition">
+                    ${ch.emoji} ${ch.name}
+                </button>
+            `).join('');
+        }
+
+        function selectChapter(id) {
+            currentChapter = id;
+            loadConfidences();
+        }
+
+        function selectEmotion(id) {
+            currentEmotion = id;
+            document.querySelectorAll('.emotion-btn').forEach(btn => {
+                if (btn.dataset.emotion === id) {
+                    btn.classList.add('ring-2', 'ring-primary', 'border-primary');
+                } else {
+                    btn.classList.remove('ring-2', 'ring-primary', 'border-primary');
+                }
+            });
+        }
+
+        async function loadConfidences() {
+            try {
+                const response = await fetch(`/api/confidences?chapter=${currentChapter}`);
+                const result = await response.json();
+                
+                if (result.success) {
+                    renderConfidences(result.data);
+                }
+            } catch (error) {
+                console.error('Error:', error);
+            }
+        }
+
+        function renderConfidences(confidences) {
+            const container = document.getElementById('confidences-list');
+            
+            if (confidences.length === 0) {
+                container.innerHTML = '<div class="text-center text-secondary py-12"><p>Aucune confidence. Soyez le premier à partager.</p></div>';
+                return;
+            }
+            
+            container.innerHTML = confidences.map(conf => {
+                const chapter = CHAPTERS.find(ch => ch.id === conf.emotion) || CHAPTERS[0];
+                const isOwner = conf.user_id === currentUserId;
+                
+                return `
+                    <article class="bg-surface rounded-2xl shadow-calm overflow-hidden">
+                        <div class="p-5 flex items-center justify-between border-b border-theme">
+                            <div class="flex items-center space-x-3">
+                                <div class="w-11 h-11 rounded-full bg-${chapter.color}-100 dark:bg-${chapter.color}-800 flex items-center justify-center">
+                                    <span class="text-xl">${chapter.emoji}</span>
+                                </div>
+                                <div>
+                                    <p class="text-sm text-secondary">${chapter.name}</p>
+                                    <p class="text-xs text-secondary">${timeAgo(conf.created_at)}</p>
+                                </div>
+                            </div>
+                            ${isOwner ? `
+                                <div class="flex gap-2">
+                                    <button onclick="editConfidence('${conf.id}')" class="text-sm text-blue-500 hover:underline">✏️</button>
+                                    <button onclick="deleteConfidence('${conf.id}')" class="text-sm text-red-500 hover:underline">🗑️</button>
+                                </div>
+                            ` : ''}
+                        </div>
+                        
+                        <div class="p-5">
+                            <p class="text-lg leading-relaxed">${escapeHtml(conf.content)}</p>
+                        </div>
+                        
+                        <div class="px-5 pb-5 flex flex-wrap gap-2">
+                            ${REACTIONS.map(r => `
+                                <button onclick="react('${conf.id}', '${r.id}')" class="text-sm border border-theme rounded-full py-1 px-3 hover:border-${r.color}-500 hover:bg-${r.color}-50 dark:hover:bg-${r.color}-900/50 transition">
+                                    ${r.emoji} ${conf.reactions?.[r.id] || 0}
+                                </button>
+                            `).join('')}
+                        </div>
+                        
+                        <div class="px-5 pb-5">
+                            <a href="/post.html?id=${conf.id}" class="block text-center text-primary font-medium py-2 hover:underline">
+                                💬 Voir les ${conf.responses?.length || 0} commentaire(s)
+                            </a>
+                        </div>
+                    </article>
+                `;
+            }).join('');
+        }
+
+        async function publishConfidence() {
+            const text = document.getElementById('confidence-text').value.trim();
+            
+            if (!text || !currentEmotion) {
+                alert('Veuillez remplir tous les champs');
+                return;
+            }
+            
+            try {
+                const response = await fetch('/api/confidences', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-User-Id': currentUserId
+                    },
+                    body: JSON.stringify({ content: text, emotion: currentEmotion })
+                });
+                
+                const result = await response.json();
+                
+                if (result.success && result.published) {
+                    hideModal('post-modal');
+                    document.getElementById('confidence-text').value = '';
+                    currentEmotion = null;
+                    loadConfidences();
+                } else {
+                    alert(result.message || 'Erreur');
+                }
+            } catch (error) {
+                console.error('Error:', error);
+            }
+        }
+
+        async function react(confId, reactionId) {
+            try {
+                await fetch('/api/reactions', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-User-Id': currentUserId
+                    },
+                    body: JSON.stringify({ confidenceId: confId, reactionType: reactionId })
+                });
+                loadConfidences();
+            } catch (error) {
+                console.error('Error:', error);
+            }
+        }
+
+        async function deleteConfidence(id) {
+            if (!confirm('Supprimer cette confidence ?')) return;
+            
+            try {
+                await fetch(`/api/confidences/${id}`, {
+                    method: 'DELETE',
+                    headers: { 'X-User-Id': currentUserId }
+                });
+                loadConfidences();
+            } catch (error) {
+                console.error('Error:', error);
+            }
+        }
+
+        function editConfidence(id) {
+            window.location.href = `/post.html?id=${id}&edit=true`;
+        }
+
+        function showModal(id) {
+            document.getElementById(id).classList.remove('hidden');
+        }
+
+        function hideModal(id) {
+            document.getElementById(id).classList.add('hidden');
+        }
+
+        function escapeHtml(text) {
+            const div = document.createElement('div');
+            div.textContent = text;
+            return div.innerHTML;
+        }
+
+        function timeAgo(timestamp) {
+            const seconds = Math.floor((Date.now() - timestamp) / 1000);
+            if (seconds < 60) return 'À l\'instant';
+            if (seconds < 3600) return `Il y a ${Math.floor(seconds / 60)}min`;
+            if (seconds < 86400) return `Il y a ${Math.floor(seconds / 3600)}h`;
+            return `Il y a ${Math.floor(seconds / 86400)}j`;
+        }
+
+        // Donation popup
+        function startDonationTimer() {
+            setTimeout(() => {
+                document.getElementById('donation-popup').classList.remove('hidden');
+                setTimeout(hideDonationPopup, 5000);
+            }, 15 * 60 * 1000); // 15 min
+        }
+
+        function hideDonationPopup() {
+            document.getElementById('donation-popup').classList.add('hidden');
+            startDonationTimer(); // Relancer
+        }
+    </script>
+
+</body>
+</html>
