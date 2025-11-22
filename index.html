@@ -3,467 +3,267 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Confidence Book</title>
+    <title>Confidence Book - Votre Refuge Émotionnel Anonyme</title>
+    
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    
     <style>
-        body { font-family: 'Inter', sans-serif; }
+        body {
+            font-family: 'Inter', sans-serif;
+        }
+        
+        /* Scrollbar stylisée */
+        ::-webkit-scrollbar {
+            width: 8px;
+        }
+        
+        ::-webkit-scrollbar-track {
+            background: transparent;
+        }
+        
+        ::-webkit-scrollbar-thumb {
+            background: #cbd5e1;
+            border-radius: 4px;
+        }
+        
+        ::-webkit-scrollbar-thumb:hover {
+            background: #94a3b8;
+        }
+        
+        * {
+            scrollbar-width: thin;
+            scrollbar-color: #cbd5e1 transparent;
+        }
+        
+        .fade-in {
+            animation: fadeIn 0.6s ease-in;
+        }
+        
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
     </style>
 </head>
-<body class="bg-gray-50 dark:bg-gray-900 text-gray-900 dark:text-gray-100">
 
-<!-- AUTH VIEW -->
-<div id="auth-view" class="flex items-center justify-center min-h-screen p-4">
-    <div class="w-full max-w-md text-center bg-white dark:bg-gray-800 rounded-2xl shadow-lg p-12">
-        <div class="text-6xl mb-6">🌌</div>
-        <h1 class="text-3xl font-bold text-blue-500 mb-3">Confidence Book</h1>
-        <p class="text-gray-600 dark:text-gray-400 text-lg mb-8">Personne ne doit rester seul face à son histoire.</p>
-        <button onclick="enterApp()" class="w-full bg-blue-500 text-white font-semibold py-3 px-6 rounded-lg hover:bg-blue-600 transition">
-            Entrer anonymement
-        </button>
-    </div>
-</div>
+<body class="bg-gradient-to-br from-blue-50 via-purple-50 to-pink-50 min-h-screen">
 
-<!-- APP VIEW -->
-<div id="app-view" class="hidden min-h-screen">
-    <!-- Header Mobile -->
-    <header class="md:hidden bg-white dark:bg-gray-800 shadow sticky top-0 z-20 flex items-center justify-between p-4 border-b border-gray-200 dark:border-gray-700">
-        <h1 class="text-xl font-bold text-blue-500">Confidence Book</h1>
-        <div class="flex gap-3">
-            <button onclick="toggleTheme()" class="p-2 rounded-full hover:bg-gray-100 dark:hover:bg-gray-700">
-                <svg id="theme-icon" class="w-6 h-6" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M21.752 15.002A9.718 9.718 0 0118 15.75c-5.385 0-9.75-4.365-9.75-9.75 0-1.33.266-2.597.748-3.752A9.753 9.753 0 003 11.25C3 16.635 7.365 21 12.75 21a9.753 9.753 0 009.002-5.998z" /></svg>
-            </button>
-            <button onclick="showModal('notif-modal')" class="p-2 rounded-full relative hover:bg-gray-100 dark:hover:bg-gray-700">
-                <svg class="w-6 h-6" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M14.857 17.082a23.848 23.848 0 005.454-1.31A8.967 8.967 0 0118 9.75v-.7V9A6 6 0 006 9v.75a8.967 8.967 0 01-2.312 6.022c1.733.64 3.56 1.085 5.455 1.31m5.714 0a24.255 24.255 0 01-5.714 0m5.714 0a3 3 0 11-5.714 0" /></svg>
-                <span id="badge" class="hidden absolute top-0 right-0 bg-red-500 text-white text-xs rounded-full w-5 h-5 flex items-center justify-center"></span>
-            </button>
-            <button onclick="showModal('post-modal')" class="p-2 rounded-full bg-blue-500 text-white hover:bg-blue-600">
-                <svg class="w-6 h-6" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M16.862 4.487l1.687-1.688a1.875 1.875 0 112.652 2.652L10.582 16.07a4.5 4.5 0 01-1.897 1.13L6 18l.8-2.685a4.5 4.5 0 011.13-1.897l8.932-8.931zm0 0L19.5 7.125M18 14v4.75A2.25 2.25 0 0115.75 21H5.25A2.25 2.25 0 013 18.75V8.25A2.25 2.25 0 015.25 6H10" /></svg>
-            </button>
-        </div>
-    </header>
-
-    <!-- Main -->
-    <main class="max-w-2xl mx-auto p-4">
-        <!-- Filters -->
-        <div class="bg-white dark:bg-gray-800 rounded-xl shadow p-4 mb-6">
-            <div class="flex gap-2 overflow-x-auto">
-                <button onclick="filterChapter('all')" data-filter="all" class="filter-btn whitespace-nowrap text-sm bg-blue-500 text-white px-4 py-2 rounded-full">
-                    🌐 Tous
-                </button>
-                <button onclick="filterChapter('ruptures')" data-filter="ruptures" class="filter-btn whitespace-nowrap text-sm bg-gray-200 dark:bg-gray-700 px-4 py-2 rounded-full">
-                    💔 Ruptures
-                </button>
-                <button onclick="filterChapter('isolement')" data-filter="isolement" class="filter-btn whitespace-nowrap text-sm bg-gray-200 dark:bg-gray-700 px-4 py-2 rounded-full">
-                    😔 Isolement
-                </button>
-                <button onclick="filterChapter('traumas')" data-filter="traumas" class="filter-btn whitespace-nowrap text-sm bg-gray-200 dark:bg-gray-700 px-4 py-2 rounded-full">
-                    🔥 Traumas
-                </button>
-                <button onclick="filterChapter('stress')" data-filter="stress" class="filter-btn whitespace-nowrap text-sm bg-gray-200 dark:bg-gray-700 px-4 py-2 rounded-full">
-                    🧠 Stress
-                </button>
-                <button onclick="filterChapter('espoir')" data-filter="espoir" class="filter-btn whitespace-nowrap text-sm bg-gray-200 dark:bg-gray-700 px-4 py-2 rounded-full">
-                    🤝 Espoir
-                </button>
+    <!-- ÉTAPE 1 : LANDING PAGE -->
+    <div id="landing-page" class="min-h-screen flex items-center justify-center p-4">
+        <div class="max-w-4xl w-full text-center fade-in">
+            <!-- Logo -->
+            <div class="flex justify-center mb-8">
+                <svg class="w-20 h-20 text-blue-600" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M12 6.042A8.967 8.967 0 006 3.75c-1.052 0-2.062.18-3 .512v14.25A8.987 8.987 0 016 18c2.305 0 4.408.867 6 2.292m0-14.25a8.966 8.966 0 016-2.292c1.052 0 2.062.18 3 .512v14.25A8.987 8.987 0 0018 18a8.967 8.967 0 00-6 2.292m0-14.25v14.25" />
+                </svg>
             </div>
-        </div>
-
-        <!-- Publish Box -->
-        <div class="bg-white dark:bg-gray-800 rounded-xl shadow p-4 mb-6">
-            <button onclick="showModal('post-modal')" class="w-full text-left bg-gray-100 dark:bg-gray-700 rounded-full p-3 px-5 text-gray-600 dark:text-gray-400 hover:bg-gray-200 dark:hover:bg-gray-600 transition">
-                Exprimez-vous en toute sécurité...
-            </button>
-        </div>
-
-        <!-- Confidences List -->
-        <div id="list"></div>
-
-        <!-- Donation Banner -->
-        <div class="bg-gradient-to-r from-blue-500 to-purple-600 text-white rounded-xl shadow-lg p-6 mb-6 text-center">
-            <h3 class="text-xl font-bold mb-2">💙 Soutenez Confidence Book</h3>
-            <p class="text-sm opacity-90 mb-4">Aidez-nous à maintenir cet espace bienveillant et gratuit pour tous</p>
-            <div class="flex flex-col gap-2">
-                <a href="mailto:nexusstudio100@gmail.com" class="bg-white text-blue-600 font-semibold py-2 px-4 rounded-lg hover:bg-gray-100 transition">
-                    ✉️ Contact Email
-                </a>
-                <a href="https://wa.me/2290169056283" target="_blank" class="bg-green-500 text-white font-semibold py-2 px-4 rounded-lg hover:bg-green-600 transition">
-                    💚 WhatsApp / Mobile Money
-                </a>
-            </div>
-        </div>
-    </main>
-
-    <!-- Footer -->
-    <footer class="bg-white dark:bg-gray-800 border-t border-gray-200 dark:border-gray-700 py-6 text-center">
-        <p class="text-sm text-gray-600 dark:text-gray-400">
-            Powered by <span class="font-semibold text-blue-500">Nexus Studio</span>
-        </p>
-    </footer>
-</div>
-
-<!-- POST MODAL -->
-<div id="post-modal" class="hidden fixed inset-0 z-50 flex items-center justify-center p-4">
-    <div onclick="hideModal('post-modal')" class="absolute inset-0 bg-black/50"></div>
-    <div class="bg-white dark:bg-gray-800 rounded-xl shadow-lg w-full max-w-2xl z-10 p-6">
-        <h2 id="modal-title" class="text-2xl font-bold text-blue-500 mb-4">Écrire une confidence</h2>
-        <textarea id="text" rows="8" class="w-full p-4 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100" placeholder="Votre histoire..."></textarea>
-        <div class="mt-4">
-            <p class="text-sm text-gray-600 dark:text-gray-400 mb-2">Tonalité :</p>
-            <div id="emotions" class="flex flex-wrap gap-2"></div>
-        </div>
-        <div class="flex justify-end gap-4 mt-6">
-            <button onclick="hideModal('post-modal')" class="text-gray-600 dark:text-gray-400">Annuler</button>
-            <button id="submit-btn" onclick="publish()" class="bg-blue-500 text-white px-6 py-2 rounded-lg hover:bg-blue-600">Publier</button>
-        </div>
-    </div>
-</div>
-
-<!-- NOTIF MODAL -->
-<div id="notif-modal" class="hidden fixed inset-0 z-50 flex items-center justify-center p-4">
-    <div onclick="hideModal('notif-modal')" class="absolute inset-0 bg-black/50"></div>
-    <div class="bg-white dark:bg-gray-800 rounded-xl shadow-lg w-full max-w-lg z-10 p-6 max-h-[80vh] overflow-y-auto">
-        <h2 class="text-2xl font-bold text-blue-500 mb-4">Notifications</h2>
-        <div id="notif-list"></div>
-    </div>
-</div>
-
-<script>
-let userId = null;
-let deviceId = null;
-let emotion = null;
-let editingId = null;
-let currentFilter = 'all';
-
-const CHAPTERS = [
-    { id: 'ruptures', emoji: '💔', name: 'Ruptures', color: 'red' },
-    { id: 'isolement', emoji: '😔', name: 'Isolement', color: 'blue' },
-    { id: 'traumas', emoji: '🔥', name: 'Traumas', color: 'orange' },
-    { id: 'stress', emoji: '🧠', name: 'Stress', color: 'purple' },
-    { id: 'spiritualite', emoji: '🪞', name: 'Spiritualité', color: 'indigo' },
-    { id: 'espoir', emoji: '🤝', name: 'Espoir', color: 'teal' }
-];
-
-const REACTIONS = [
-    { id: 'soutien', emoji: '🤝🏾', label: 'Je te soutiens' },
-    { id: 'espoir', emoji: '🔥', label: 'Garde espoir' },
-    { id: 'compatis', emoji: '🤜🏾🤛🏾', label: 'Je compatis' },
-    { id: 'pas_seul', emoji: '🫂', label: 'T\'es pas seul' },
-    { id: 'courage', emoji: '🙌🏾', label: 'Courage' },
-    { id: 'triste', emoji: '💔', label: 'Oh que c\'est triste' }
-];
-
-// Theme
-function toggleTheme() {
-    document.documentElement.classList.toggle('dark');
-    localStorage.setItem('theme', document.documentElement.classList.contains('dark') ? 'dark' : 'light');
-    updateThemeIcon();
-}
-
-function updateThemeIcon() {
-    const icon = document.getElementById('theme-icon');
-    if (document.documentElement.classList.contains('dark')) {
-        icon.innerHTML = '<path stroke-linecap="round" stroke-linejoin="round" d="M12 3v2.25m6.364.386l-1.591 1.591M21 12h-2.25m-.386 6.364l-1.591-1.591M12 18.75V21m-4.773-4.227l-1.591 1.591M5.25 12H3m4.227-4.773L5.636 5.636M15.75 12a3.75 3.75 0 11-7.5 0 3.75 3.75 0 017.5 0z" />';
-    } else {
-        icon.innerHTML = '<path stroke-linecap="round" stroke-linejoin="round" d="M21.752 15.002A9.718 9.718 0 0118 15.75c-5.385 0-9.75-4.365-9.75-9.75 0-1.33.266-2.597.748-3.752A9.753 9.753 0 003 11.25C3 16.635 7.365 21 12.75 21a9.753 9.753 0 009.002-5.998z" />';
-    }
-}
-
-// Init theme
-if (localStorage.getItem('theme') === 'dark' || (!localStorage.getItem('theme') && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
-    document.documentElement.classList.add('dark');
-}
-updateThemeIcon();
-
-// Device ID
-async function generateDeviceId() {
-    const canvas = document.createElement('canvas');
-    const ctx = canvas.getContext('2d');
-    ctx.textBaseline = 'top';
-    ctx.font = '14px Arial';
-    ctx.fillText('fp', 2, 2);
-    
-    const fp = {
-        ua: navigator.userAgent,
-        lang: navigator.language,
-        screen: `${screen.width}x${screen.height}`,
-        canvas: canvas.toDataURL().substring(0, 100)
-    };
-    
-    let hash = 0;
-    const str = JSON.stringify(fp);
-    for (let i = 0; i < str.length; i++) {
-        hash = ((hash << 5) - hash) + str.charCodeAt(i);
-        hash = hash & hash;
-    }
-    
-    return 'device_' + Math.abs(hash).toString(36);
-}
-
-// Auth
-async function enterApp() {
-    deviceId = await generateDeviceId();
-    
-    const r = await fetch('/api/auth/device', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ deviceId })
-    });
-    
-    const data = await r.json();
-    userId = data.userId;
-    
-    document.getElementById('auth-view').classList.add('hidden');
-    document.getElementById('app-view').classList.remove('hidden');
-    
-    renderEmotions();
-    loadConfidences();
-    loadNotifications();
-    setInterval(loadNotifications, 30000);
-}
-
-// Filters
-function filterChapter(chapter) {
-    currentFilter = chapter;
-    document.querySelectorAll('.filter-btn').forEach(btn => {
-        if (btn.dataset.filter === chapter) {
-            btn.classList.remove('bg-gray-200', 'dark:bg-gray-700');
-            btn.classList.add('bg-blue-500', 'text-white');
-        } else {
-            btn.classList.remove('bg-blue-500', 'text-white');
-            btn.classList.add('bg-gray-200', 'dark:bg-gray-700');
-        }
-    });
-    loadConfidences();
-}
-
-// Emotions
-function renderEmotions() {
-    const html = CHAPTERS.map(ch => `
-        <button onclick="selectEmotion('${ch.id}')" data-id="${ch.id}" class="emotion-btn border-2 border-gray-300 dark:border-gray-600 text-sm rounded-full py-2 px-4 hover:border-blue-500">
-            ${ch.emoji} ${ch.name}
-        </button>
-    `).join('');
-    document.getElementById('emotions').innerHTML = html;
-}
-
-function selectEmotion(id) {
-    emotion = id;
-    document.querySelectorAll('.emotion-btn').forEach(btn => {
-        btn.classList.toggle('border-blue-500', btn.dataset.id === id);
-        btn.classList.toggle('border-gray-300', btn.dataset.id !== id);
-    });
-}
-
-// Publish
-async function publish() {
-    const text = document.getElementById('text').value.trim();
-    
-    if (!text) return alert('Écrivez votre confidence');
-    if (!emotion && !editingId) return alert('Choisissez une tonalité');
-    
-    const url = editingId ? `/api/confidences/${editingId}` : '/api/confidences';
-    const method = editingId ? 'PUT' : 'POST';
-    
-    const r = await fetch(url, {
-        method,
-        headers: {
-            'Content-Type': 'application/json',
-            'X-User-Id': userId
-        },
-        body: JSON.stringify({ content: text, emotion })
-    });
-    
-    const data = await r.json();
-    
-    if (data.success) {
-        document.getElementById('text').value = '';
-        emotion = null;
-        editingId = null;
-        hideModal('post-modal');
-        loadConfidences();
-    } else {
-        alert(data.message);
-    }
-}
-
-// Edit
-function edit(id, content) {
-    editingId = id;
-    document.getElementById('text').value = content;
-    document.getElementById('modal-title').textContent = 'Modifier';
-    document.getElementById('submit-btn').textContent = 'Enregistrer';
-    showModal('post-modal');
-}
-
-// Delete
-async function del(id) {
-    if (!confirm('Supprimer ?')) return;
-    
-    await fetch(`/api/confidences/${id}`, {
-        method: 'DELETE',
-        headers: { 'X-User-Id': userId }
-    });
-    
-    loadConfidences();
-}
-
-// Load
-async function loadConfidences() {
-    const url = currentFilter === 'all' ? '/api/confidences' : `/api/confidences?chapter=${currentFilter}`;
-    const r = await fetch(url);
-    const data = await r.json();
-    
-    const html = data.data.map(c => {
-        const ch = CHAPTERS.find(x => x.id === c.emotion) || CHAPTERS[0];
-        const owner = c.user_id === userId;
-        
-        return `
-            <div id="conf-${c.id}" class="bg-white dark:bg-gray-800 rounded-xl shadow p-5 mb-4">
-                <div class="flex items-center justify-between mb-3">
-                    <div class="flex items-center gap-3">
-                        <div class="w-10 h-10 rounded-full bg-${ch.color}-100 dark:bg-${ch.color}-800 flex items-center justify-center">
-                            ${ch.emoji}
-                        </div>
-                        <div>
-                            <p class="text-xs text-gray-600 dark:text-gray-400">${ch.name}</p>
-                        </div>
+            
+            <h1 class="text-5xl font-bold text-gray-900 mb-4">Confidence Book</h1>
+            <p class="text-2xl text-gray-700 mb-8">Personne ne doit rester seul face à son histoire.</p>
+            
+            <div class="bg-white rounded-3xl shadow-2xl p-8 md:p-12 mb-8">
+                <h2 class="text-3xl font-semibold text-gray-800 mb-6">Qu'est-ce que Confidence Book ?</h2>
+                
+                <div class="grid md:grid-cols-3 gap-6 text-left mb-8">
+                    <div class="p-6 bg-blue-50 rounded-xl">
+                        <div class="text-4xl mb-3">🔒</div>
+                        <h3 class="font-semibold text-lg mb-2">100% Anonyme</h3>
+                        <p class="text-gray-600 text-sm">Aucune donnée personnelle. Aucun jugement. Juste vous et votre histoire.</p>
                     </div>
-                    ${owner ? `<div class="flex gap-2">
-                        <button onclick="edit('${c.id}', \`${c.content.replace(/`/g, '\\`')}\`)" class="text-xs text-blue-500">✏️</button>
-                        <button onclick="del('${c.id}')" class="text-xs text-red-500">🗑️</button>
-                    </div>` : ''}
+                    
+                    <div class="p-6 bg-purple-50 rounded-xl">
+                        <div class="text-4xl mb-3">💬</div>
+                        <h3 class="font-semibold text-lg mb-2">Espace Bienveillant</h3>
+                        <p class="text-gray-600 text-sm">Partagez vos peurs, espoirs, douleurs. Recevez du soutien authentique.</p>
+                    </div>
+                    
+                    <div class="p-6 bg-pink-50 rounded-xl">
+                        <div class="text-4xl mb-3">🤝</div>
+                        <h3 class="font-semibold text-lg mb-2">Communauté Humaine</h3>
+                        <p class="text-gray-600 text-sm">Des milliers de personnes prêtes à écouter sans juger.</p>
+                    </div>
                 </div>
-                <p class="text-lg mb-4">${c.content}</p>
-                <div class="flex flex-wrap gap-2 border-t border-gray-200 dark:border-gray-700 pt-4">
-                    ${REACTIONS.map(r => `
-                        <button onclick="react('${c.id}', '${r.id}')" class="text-xs border border-gray-300 dark:border-gray-600 rounded-full py-1 px-3 hover:border-blue-500">
-                            ${r.emoji} ${c.reactions[r.id] || 0}
-                        </button>
-                    `).join('')}
+                
+                <button onclick="showRules()" class="bg-blue-600 text-white font-semibold py-4 px-12 rounded-full text-lg hover:bg-blue-700 transition-all shadow-lg hover:shadow-xl">
+                    Commencer →
+                </button>
+            </div>
+            
+            <!-- Footer -->
+            <div class="text-sm text-gray-500 space-y-2">
+                <p>📞 Support : <a href="mailto:nexusstudio100@gmail.com" class="text-blue-600 hover:underline">nexusstudio100@gmail.com</a></p>
+                <p>💬 WhatsApp : <a href="https://wa.me/22969056283" target="_blank" class="text-green-600 hover:underline">+229 69 05 62 83</a></p>
+                <p class="text-xs">🌍 En cas de crise : <a href="tel:3114" class="text-red-600 font-semibold">3114 (FR)</a> | <a href="tel:1833456456" class="text-red-600 font-semibold">1-833-456-4566 (CA)</a></p>
+            </div>
+        </div>
+    </div>
+
+    <!-- ÉTAPE 2 : RÈGLES & CONDITIONS -->
+    <div id="rules-page" class="hidden min-h-screen flex items-center justify-center p-4">
+        <div class="max-w-2xl w-full bg-white rounded-3xl shadow-2xl p-8 md:p-12 fade-in">
+            <h2 class="text-3xl font-bold text-gray-900 mb-6">📜 Règles de Confidence Book</h2>
+            
+            <div class="space-y-4 mb-8 text-left">
+                <div class="p-4 bg-green-50 border-l-4 border-green-500 rounded">
+                    <h3 class="font-semibold text-green-900 mb-2">✅ Autorisé</h3>
+                    <ul class="text-sm text-green-800 space-y-1">
+                        <li>• Exprimer vos émotions (tristesse, peur, colère, espoir)</li>
+                        <li>• Partager des expériences personnelles difficiles</li>
+                        <li>• Demander du soutien ou des conseils</li>
+                        <li>• Répondre avec empathie et bienveillance</li>
+                    </ul>
                 </div>
-                <div class="mt-4 space-y-3">
-                    ${c.responses.map(resp => `
-                        <div class="flex gap-3">
-                            <div class="text-2xl">${resp.avatar}</div>
-                            <div class="flex-1 bg-gray-100 dark:bg-gray-700 rounded-xl p-3">
-                                <p class="text-sm text-gray-900 dark:text-gray-100">${resp.content}</p>
-                                <div class="flex gap-2 mt-2">
-                                    <button onclick="reactResp('${resp.id}', 'soutien')" class="text-xs text-gray-700 dark:text-gray-300">🤝🏾 ${resp.reactions.soutien || 0}</button>
-                                    <button onclick="reactResp('${resp.id}', 'espoir')" class="text-xs text-gray-700 dark:text-gray-300">🔥 ${resp.reactions.espoir || 0}</button>
-                                    <button onclick="reactResp('${resp.id}', 'compatis')" class="text-xs text-gray-700 dark:text-gray-300">🤜🏾🤛🏾 ${resp.reactions.compatis || 0}</button>
-                                </div>
-                            </div>
-                        </div>
-                    `).join('')}
-                    <input id="resp-${c.id}" placeholder="Répondre..." class="w-full bg-gray-100 dark:bg-gray-700 text-gray-900 dark:text-gray-100 rounded-full p-2 px-4 text-sm" onkeypress="if(event.key==='Enter') respond('${c.id}')">
+                
+                <div class="p-4 bg-red-50 border-l-4 border-red-500 rounded">
+                    <h3 class="font-semibold text-red-900 mb-2">❌ Interdit</h3>
+                    <ul class="text-sm text-red-800 space-y-1">
+                        <li>• Mentionner des noms, prénoms, adresses, numéros de téléphone</li>
+                        <li>• Harcèlement, jugement, violence verbale</li>
+                        <li>• Publicité, spam, liens externes</li>
+                        <li>• Contenus hors sujet (politique, sport, actualités)</li>
+                        <li>• Discrimination (racisme, sexisme, homophobie)</li>
+                    </ul>
+                </div>
+                
+                <div class="p-4 bg-blue-50 border-l-4 border-blue-500 rounded">
+                    <h3 class="font-semibold text-blue-900 mb-2">🛡️ Votre Sécurité</h3>
+                    <ul class="text-sm text-blue-800 space-y-1">
+                        <li>• Une IA modère automatiquement tous les messages</li>
+                        <li>• Les contenus inappropriés sont bloqués instantanément</li>
+                        <li>• Vos publications expirent après 90 jours</li>
+                        <li>• Vous pouvez supprimer vos messages à tout moment</li>
+                    </ul>
                 </div>
             </div>
-        `;
-    }).join('');
-    
-    document.getElementById('list').innerHTML = html || '<p class="text-center text-gray-600 dark:text-gray-400 py-12">Aucune confidence</p>';
-}
-
-// Reactions
-async function react(confId, type) {
-    await fetch('/api/reactions', {
-        method: 'POST',
-        headers: {
-            'Content-Type': 'application/json',
-            'X-User-Id': userId
-        },
-        body: JSON.stringify({ confidenceId: confId, reactionType: type })
-    });
-    loadConfidences();
-}
-
-async function reactResp(respId, type) {
-    await fetch('/api/response-reactions', {
-        method: 'POST',
-        headers: {
-            'Content-Type': 'application/json',
-            'X-User-Id': userId
-        },
-        body: JSON.stringify({ responseId: respId, reactionType: type })
-    });
-    loadConfidences();
-}
-
-// Respond
-async function respond(confId) {
-    const input = document.getElementById(`resp-${confId}`);
-    const text = input.value.trim();
-    if (!text) return;
-    
-    await fetch('/api/responses', {
-        method: 'POST',
-        headers: {
-            'Content-Type': 'application/json',
-            'X-User-Id': userId
-        },
-        body: JSON.stringify({ confidenceId: confId, content: text })
-    });
-    
-    input.value = '';
-    loadConfidences();
-}
-
-// Notifications
-async function loadNotifications() {
-    const r = await fetch('/api/notifications', {
-        headers: { 'X-User-Id': userId }
-    });
-    const data = await r.json();
-    
-    const unread = data.data.filter(n => !n.read).length;
-    const badge = document.getElementById('badge');
-    
-    if (unread > 0) {
-        badge.textContent = unread > 9 ? '9+' : unread;
-        badge.classList.remove('hidden');
-    } else {
-        badge.classList.add('hidden');
-    }
-    
-    const html = data.data.map(n => `
-        <div onclick="goToConfidence('${n.confidence_id}')" class="p-4 rounded-lg ${n.read ? 'bg-gray-100 dark:bg-gray-700' : 'bg-blue-50 dark:bg-blue-900'} mb-2 cursor-pointer hover:opacity-80 transition">
-            <p class="text-sm text-gray-900 dark:text-gray-100">${n.message}</p>
-            <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">${new Date(n.created_at).toLocaleDateString('fr-FR')}</p>
+            
+            <div class="flex items-start space-x-3 mb-6">
+                <input type="checkbox" id="accept-rules" class="mt-1 w-5 h-5 text-blue-600 rounded">
+                <label for="accept-rules" class="text-sm text-gray-700">
+                    J'ai lu et j'accepte les règles de Confidence Book. Je comprends que cet espace est dédié au soutien émotionnel et que tout contenu inapproprié sera supprimé.
+                </label>
+            </div>
+            
+            <button onclick="createAccount()" id="accept-btn" disabled class="w-full bg-gray-400 text-white font-semibold py-4 rounded-full text-lg cursor-not-allowed">
+                Continuer
+            </button>
+            
+            <button onclick="showLanding()" class="w-full mt-4 text-gray-600 hover:text-gray-800 font-medium">
+                ← Retour
+            </button>
         </div>
-    `).join('');
-    
-    document.getElementById('notif-list').innerHTML = html || '<p class="text-center text-gray-600 dark:text-gray-400 py-6">Aucune notification</p>';
-}
+    </div>
 
-async function goToConfidence(confId) {
-    hideModal('notif-modal');
-    
-    // Scroll to confidence
-    const element = document.getElementById(`conf-${confId}`);
-    if (element) {
-        element.scrollIntoView({ behavior: 'smooth', block: 'center' });
-        element.classList.add('ring-4', 'ring-blue-500');
-        setTimeout(() => element.classList.remove('ring-4', 'ring-blue-500'), 2000);
-    }
-}
+    <!-- ÉTAPE 3 : CRÉATION DE COMPTE -->
+    <div id="account-page" class="hidden min-h-screen flex items-center justify-center p-4">
+        <div class="max-w-md w-full bg-white rounded-3xl shadow-2xl p-8 md:p-12 fade-in">
+            <h2 class="text-3xl font-bold text-gray-900 mb-4">🔑 Votre Identité Anonyme</h2>
+            <p class="text-gray-600 mb-8">Nous allons générer un identifiant unique pour vous. Conservez-le précieusement !</p>
+            
+            <div class="bg-blue-50 border-2 border-blue-200 rounded-xl p-6 mb-6">
+                <p class="text-sm text-blue-800 mb-3 font-medium">Votre ID unique :</p>
+                <div class="bg-white rounded-lg p-4 font-mono text-lg text-center break-all" id="user-id-display">
+                    Génération...
+                </div>
+                <button onclick="copyUserId()" class="w-full mt-4 bg-blue-600 text-white py-2 rounded-lg hover:bg-blue-700 transition">
+                    📋 Copier l'ID
+                </button>
+            </div>
+            
+            <div class="bg-yellow-50 border-l-4 border-yellow-500 p-4 mb-6">
+                <p class="text-sm text-yellow-800">
+                    <strong>⚠️ Important :</strong> Cet ID est le seul moyen de retrouver votre compte. Conservez-le dans un endroit sûr (notes, email personnel, etc.)
+                </p>
+            </div>
+            
+            <button onclick="enterApp()" class="w-full bg-green-600 text-white font-semibold py-4 rounded-full text-lg hover:bg-green-700 transition-all shadow-lg">
+                J'ai sauvegardé mon ID, continuer →
+            </button>
+        </div>
+    </div>
 
-// Modals
-function showModal(id) {
-    document.getElementById(id).classList.remove('hidden');
-}
+    <!-- JAVASCRIPT -->
+    <script>
+        let currentUserId = null;
 
-function hideModal(id) {
-    document.getElementById(id).classList.add('hidden');
-    if (id === 'post-modal') {
-        document.getElementById('text').value = '';
-        editingId = null;
-        emotion = null;
-        document.getElementById('modal-title').textContent = 'Écrire une confidence';
-        document.getElementById('submit-btn').textContent = 'Publier';
-    }
-}
-</script>
+        // Checkbox rules
+        document.getElementById('accept-rules')?.addEventListener('change', (e) => {
+            const btn = document.getElementById('accept-btn');
+            if (e.target.checked) {
+                btn.disabled = false;
+                btn.classList.remove('bg-gray-400', 'cursor-not-allowed');
+                btn.classList.add('bg-blue-600', 'hover:bg-blue-700', 'cursor-pointer');
+            } else {
+                btn.disabled = true;
+                btn.classList.add('bg-gray-400', 'cursor-not-allowed');
+                btn.classList.remove('bg-blue-600', 'hover:bg-blue-700', 'cursor-pointer');
+            }
+        });
+
+        function showLanding() {
+            document.getElementById('landing-page').classList.remove('hidden');
+            document.getElementById('rules-page').classList.add('hidden');
+            document.getElementById('account-page').classList.add('hidden');
+        }
+
+        function showRules() {
+            document.getElementById('landing-page').classList.add('hidden');
+            document.getElementById('rules-page').classList.remove('hidden');
+            document.getElementById('account-page').classList.add('hidden');
+        }
+
+        async function createAccount() {
+            document.getElementById('rules-page').classList.add('hidden');
+            document.getElementById('account-page').classList.remove('hidden');
+            
+            // Appel API pour créer un compte
+            try {
+                const response = await fetch('/api/auth/anonymous', {
+                    method: 'POST'
+                });
+                
+                const result = await response.json();
+                
+                if (result.success) {
+                    currentUserId = result.userId;
+                    document.getElementById('user-id-display').textContent = result.userId;
+                    
+                    // Sauvegarder dans localStorage
+                    localStorage.setItem('confidence_user_id', result.userId);
+                } else {
+                    alert('Erreur lors de la création du compte');
+                }
+            } catch (error) {
+                console.error('Error:', error);
+                alert('Erreur de connexion au serveur');
+            }
+        }
+
+        function copyUserId() {
+            const userId = document.getElementById('user-id-display').textContent;
+            navigator.clipboard.writeText(userId);
+            alert('✅ ID copié dans le presse-papier !');
+        }
+
+        function enterApp() {
+            if (!currentUserId) {
+                alert('Veuillez attendre la génération de votre ID');
+                return;
+            }
+            
+            // Rediriger vers l'application
+            window.location.href = '/app.html';
+        }
+
+        // Vérifier si déjà connecté
+        window.addEventListener('DOMContentLoaded', () => {
+            const savedUserId = localStorage.getItem('confidence_user_id');
+            if (savedUserId) {
+                // Déjà connecté, rediriger directement
+                window.location.href = '/app.html';
+            }
+        });
+    </script>
 
 </body>
 </html>
