@@ -4,200 +4,150 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Mon Profil - Confidence Book</title>
-    
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
-    
     <style>
         body { font-family: 'Inter', sans-serif; }
         ::-webkit-scrollbar { width: 8px; }
-        ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 4px; }
-        
-        .theme-calm {
-            --theme-bg: #f8f9fa;
-            --theme-surface: #ffffff;
-            --theme-primary: #3b82f6;
-            --theme-text-primary: #1f2937;
-            --theme-text-secondary: #6b7280;
-            --theme-border: #e5e7eb;
-        }
-        
-        .dark .theme-calm {
-            --theme-bg: #111827;
-            --theme-surface: #1f2937;
-            --theme-primary: #60a5fa;
-            --theme-text-primary: #f9fafb;
-            --theme-text-secondary: #9ca3af;
-            --theme-border: #374151;
-        }
-        
-        body { background-color: var(--theme-bg); color: var(--theme-text-primary); }
-        .bg-surface { background-color: var(--theme-surface); }
-        .text-primary { color: var(--theme-primary); }
-        .text-secondary { color: var(--theme-text-secondary); }
-        .border-theme { border-color: var(--theme-border); }
-        .shadow-calm { box-shadow: 0 4px 12px 0 rgba(0, 0, 0, 0.05); }
+        ::-webkit-scrollbar-track { background: #f1f1f1; }
+        ::-webkit-scrollbar-thumb { background: #667eea; border-radius: 4px; }
     </style>
 </head>
-
-<body class="theme-calm min-h-screen">
-
-    <!-- Header -->
-    <header class="bg-surface shadow-calm sticky top-0 z-20 border-b border-theme">
-        <div class="container mx-auto max-w-4xl px-4 py-4 flex items-center justify-between">
-            <a href="/app.html" class="flex items-center space-x-2 text-primary hover:opacity-80">
-                <svg class="w-6 h-6" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
-                    <path stroke-linecap="round" stroke-linejoin="round" d="M10.5 19.5L3 12m0 0l7.5-7.5M3 12h18" />
-                </svg>
-                <span class="font-medium">Retour</span>
-            </a>
-            
-            <h1 class="text-lg font-semibold">Mon Profil</h1>
-            
-            <a href="/settings.html" class="text-secondary hover:text-primary">
-                <svg class="w-6 h-6" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
-                    <path stroke-linecap="round" stroke-linejoin="round" d="M9.594 3.94c.09-.542.56-.94 1.11-.94h2.593c.55 0 1.02.398 1.11.94l.213 1.281c.063.374.313.686.645.87.074.04.147.083.22.127.324.196.72.257 1.075.124l1.217-.456a1.125 1.125 0 011.37.49l1.296 2.247a1.125 1.125 0 01-.26 1.431l-1.003.827c-.293.24-.438.613-.431.992a6.759 6.759 0 010 .255c-.007.378.138.75.43.99l1.005.828c.424.35.534.954.26 1.43l-1.298 2.247a1.125 1.125 0 01-1.369.491l-1.217-.456c-.355-.133-.75-.072-1.076.124a6.57 6.57 0 01-.22.128c-.331.183-.581.495-.644.869l-.213 1.28c-.09.543-.56.941-1.11.941h-2.594c-.55 0-1.02-.398-1.11-.94l-.213-1.281c-.062-.374-.312-.686-.644-.87a6.52 6.52 0 01-.22-.127c-.325-.196-.72-.257-1.076-.124l-1.217.456a1.125 1.125 0 01-1.369-.49l-1.297-2.247a1.125 1.125 0 01.26-1.431l1.004-.827c.292-.24.437-.613.43-.992a6.932 6.932 0 010-.255c.007-.378-.138-.75-.43-.99l-1.004-.828a1.125 1.125 0 01-.26-1.43l1.297-2.247a1.125 1.125 0 011.37-.491l1.216.456c.356.133.751.072 1.076-.124.072-.044.146-.087.22-.128.332-.183.582-.495.644-.869l.214-1.281z" />
-                    <path stroke-linecap="round" stroke-linejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
-                </svg>
-            </a>
+<body class="bg-gray-50 min-h-screen">
+    
+    <header class="bg-white border-b sticky top-0 z-20 shadow-sm">
+        <div class="container mx-auto max-w-4xl px-4 py-3 flex items-center justify-between">
+            <a href="/feed" class="text-gray-600 hover:text-gray-900">← Retour au fil</a>
+            <h1 class="text-xl font-bold text-purple-600">Mon Profil</h1>
+            <a href="/settings" class="text-gray-600 hover:text-gray-900">⚙️</a>
         </div>
     </header>
-
-    <!-- Container -->
+    
     <div class="container mx-auto max-w-4xl px-4 py-8">
         
-        <!-- Avatar & Stats -->
-        <div class="bg-surface rounded-2xl shadow-calm p-8 mb-6 text-center">
-            <div class="w-24 h-24 rounded-full bg-gradient-to-br from-blue-400 to-purple-600 mx-auto mb-4 flex items-center justify-center">
-                <span class="text-4xl">👤</span>
+        <!-- Stats Card -->
+        <div class="bg-gradient-to-r from-purple-600 to-indigo-600 rounded-2xl shadow-xl p-8 text-white mb-8">
+            <div class="flex items-center space-x-4 mb-6">
+                <div class="w-20 h-20 rounded-full bg-white bg-opacity-20 flex items-center justify-center text-4xl" id="user-avatar">
+                    📖
+                </div>
+                <div>
+                    <p class="text-sm opacity-80">Mon ID anonyme</p>
+                    <p class="text-2xl font-bold" id="user-id">CB_xxxxxxxx</p>
+                    <p class="text-sm opacity-80 mt-1">Membre depuis <span id="join-date">...</span></p>
+                </div>
             </div>
             
-            <div class="bg-gray-100 dark:bg-gray-800 rounded-lg p-3 mb-4 font-mono text-sm" id="user-id-display">
-                Chargement...
-            </div>
-            
-            <div class="grid grid-cols-3 gap-4 mt-6">
-                <div class="p-4 bg-blue-50 dark:bg-blue-900/30 rounded-xl">
-                    <p class="text-3xl font-bold text-blue-600" id="stat-posts">0</p>
-                    <p class="text-xs text-secondary mt-1">Confidences</p>
+            <div class="grid grid-cols-3 gap-4">
+                <div class="text-center">
+                    <p class="text-3xl font-bold" id="stat-confidences">0</p>
+                    <p class="text-sm opacity-80">Confidences</p>
                 </div>
-                <div class="p-4 bg-purple-50 dark:bg-purple-900/30 rounded-xl">
-                    <p class="text-3xl font-bold text-purple-600" id="stat-reactions">0</p>
-                    <p class="text-xs text-secondary mt-1">Réactions reçues</p>
+                <div class="text-center">
+                    <p class="text-3xl font-bold" id="stat-reactions">0</p>
+                    <p class="text-sm opacity-80">Réactions reçues</p>
                 </div>
-                <div class="p-4 bg-pink-50 dark:bg-pink-900/30 rounded-xl">
-                    <p class="text-3xl font-bold text-pink-600" id="stat-comments">0</p>
-                    <p class="text-xs text-secondary mt-1">Commentaires</p>
+                <div class="text-center">
+                    <p class="text-3xl font-bold" id="stat-responses">0</p>
+                    <p class="text-sm opacity-80">Réponses reçues</p>
                 </div>
             </div>
         </div>
-
+        
         <!-- Mes Confidences -->
-        <div class="bg-surface rounded-2xl shadow-calm p-6">
-            <h2 class="text-xl font-semibold mb-6">📝 Mes Confidences</h2>
-            <div id="my-posts-list" class="space-y-4">
-                <p class="text-center text-secondary py-8">Chargement...</p>
+        <div class="bg-white rounded-2xl shadow-sm border p-6">
+            <h2 class="text-2xl font-bold text-gray-800 mb-6">📝 Mes Confidences</h2>
+            
+            <div id="my-confidences-list" class="space-y-4">
+                <p class="text-center text-gray-500 py-8">Chargement...</p>
             </div>
         </div>
-
+        
     </div>
-
-    <!-- JAVASCRIPT -->
+    
     <script>
-        const currentUserId = localStorage.getItem('confidence_user_id');
+        const currentUserId = localStorage.getItem('user_id');
         
-        if (!currentUserId) window.location.href = '/';
+        if (!currentUserId) {
+            window.location.href = '/';
+        }
         
-        const CHAPTERS = [
-            { id: 'ruptures', emoji: '💔', name: 'Ruptures', color: 'red' },
-            { id: 'isolement', emoji: '😔', name: 'Isolement', color: 'blue' },
-            { id: 'traumas', emoji: '🔥', name: 'Traumas', color: 'orange' },
-            { id: 'stress', emoji: '🧠', name: 'Stress', color: 'purple' },
-            { id: 'spiritualite', emoji: '🪞', name: 'Spiritualité', color: 'indigo' },
-            { id: 'espoir', emoji: '🤝', name: 'Espoir', color: 'teal' }
-        ];
-
-        document.addEventListener('DOMContentLoaded', loadProfile);
-
+        document.addEventListener('DOMContentLoaded', () => {
+            loadProfile();
+        });
+        
         async function loadProfile() {
-            document.getElementById('user-id-display').textContent = currentUserId;
-            
             try {
-                const response = await fetch('/api/confidences?chapter=all');
+                const response = await fetch('/api/profile', {
+                    headers: { 'X-User-Id': currentUserId }
+                });
+                
                 const result = await response.json();
                 
                 if (result.success) {
-                    const myPosts = result.data.filter(c => c.user_id === currentUserId);
-                    
-                    // Stats
-                    const totalReactions = myPosts.reduce((sum, post) => {
-                        return sum + Object.values(post.reactions || {}).reduce((a, b) => a + b, 0);
-                    }, 0);
-                    
-                    const totalComments = myPosts.reduce((sum, post) => {
-                        return sum + (post.responses?.length || 0);
-                    }, 0);
-                    
-                    document.getElementById('stat-posts').textContent = myPosts.length;
-                    document.getElementById('stat-reactions').textContent = totalReactions;
-                    document.getElementById('stat-comments').textContent = totalComments;
-                    
-                    // Liste posts
-                    renderMyPosts(myPosts);
+                    renderProfile(result.profile);
                 }
             } catch (error) {
                 console.error('Error:', error);
             }
         }
-
-        function renderMyPosts(posts) {
-            const container = document.getElementById('my-posts-list');
+        
+        function renderProfile(profile) {
+            document.getElementById('user-id').textContent = profile.userId;
+            document.getElementById('join-date').textContent = new Date(profile.joinedAt).toLocaleDateString('fr-FR');
             
-            if (posts.length === 0) {
-                container.innerHTML = '<p class="text-center text-secondary py-8">Vous n\'avez pas encore publié de confidence.</p>';
+            document.getElementById('stat-confidences').textContent = profile.confidences;
+            document.getElementById('stat-reactions').textContent = profile.reactions;
+            document.getElementById('stat-responses').textContent = profile.responses;
+            
+            loadMyConfidences();
+        }
+        
+        async function loadMyConfidences() {
+            try {
+                const response = await fetch('/api/confidences?chapter=all');
+                const result = await response.json();
+                
+                if (result.success) {
+                    const myConfidences = result.data.filter(c => c.user_id === currentUserId);
+                    renderMyConfidences(myConfidences);
+                }
+            } catch (error) {
+                console.error('Error:', error);
+            }
+        }
+        
+        function renderMyConfidences(confidences) {
+            const container = document.getElementById('my-confidences-list');
+            
+            if (confidences.length === 0) {
+                container.innerHTML = '<p class="text-center text-gray-500 py-8">Vous n\'avez pas encore publié de confidence.</p>';
                 return;
             }
             
-            container.innerHTML = posts.map(post => {
-                const chapter = CHAPTERS.find(ch => ch.id === post.emotion) || CHAPTERS[0];
-                const totalReactions = Object.values(post.reactions || {}).reduce((a, b) => a + b, 0);
-                
-                return `
-                    <div class="border border-theme rounded-xl p-4 hover:bg-gray-50 dark:hover:bg-gray-800 transition">
-                        <div class="flex items-start justify-between mb-3">
-                            <div class="flex items-center space-x-2">
-                                <span class="text-xl">${chapter.emoji}</span>
-                                <span class="text-sm font-medium text-${chapter.color}-600">${chapter.name}</span>
-                            </div>
-                            <span class="text-xs text-secondary">${timeAgo(post.created_at)}</span>
-                        </div>
-                        
-                        <p class="text-secondary leading-relaxed mb-3 line-clamp-2">${escapeHtml(post.content)}</p>
-                        
-                        <div class="flex items-center justify-between text-sm text-secondary">
-                            <span>❤️ ${totalReactions} réactions</span>
-                            <span>💬 ${post.responses?.length || 0} commentaires</span>
-                            <a href="/post.html?id=${post.id}" class="text-primary font-medium hover:underline">Voir →</a>
+            const html = confidences.map(conf => `
+                <div class="border rounded-xl p-4 hover:bg-gray-50 transition">
+                    <p class="text-gray-800 mb-2">${escapeHtml(conf.content.substring(0, 150))}${conf.content.length > 150 ? '...' : ''}</p>
+                    <div class="flex items-center justify-between text-sm text-gray-500">
+                        <span>${new Date(conf.created_at).toLocaleDateString('fr-FR')}</span>
+                        <div class="space-x-2">
+                            <span>💬 ${conf.responses?.length || 0}</span>
+                            <span>💙 ${Object.values(conf.reactions).reduce((a,b) => a+b, 0)}</span>
+                            <a href="/confidence/${conf.id}" class="text-purple-600 hover:underline">Voir →</a>
                         </div>
                     </div>
-                `;
-            }).join('');
+                </div>
+            `).join('');
+            
+            container.innerHTML = html;
         }
-
+        
         function escapeHtml(text) {
             const div = document.createElement('div');
             div.textContent = text;
             return div.innerHTML;
         }
-
-        function timeAgo(timestamp) {
-            const seconds = Math.floor((Date.now() - timestamp) / 1000);
-            if (seconds < 60) return 'À l\'instant';
-            if (seconds < 3600) return `Il y a ${Math.floor(seconds / 60)}min`;
-            if (seconds < 86400) return `Il y a ${Math.floor(seconds / 3600)}h`;
-            return `Il y a ${Math.floor(seconds / 86400)}j`;
-        }
     </script>
-
+    
 </body>
 </html>
