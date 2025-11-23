@@ -1,12 +1,13 @@
 {
   "name": "confidence-book",
-  "version": "1.0.0",
+  "version": "2.0.0",
   "description": "Confidence Book - Votre refuge émotionnel anonyme",
   "type": "module",
   "main": "api.js",
   "scripts": {
     "start": "node api.js",
-    "dev": "node --watch api.js"
+    "dev": "node --watch api.js",
+    "reset-db": "node scripts/reset-db.js"
   },
   "keywords": [
     "confidence",
