@@ -1,8 +1,8 @@
-// scripts/reset-db.js - RESET DATABASE (Déploiement uniquement)
-// ⚠️ NE PAS EXPOSER EN PRODUCTION
+// scripts/reset-db.js - Reset Database Script
+// À UTILISER UNIQUEMENT EN DÉVELOPPEMENT OU POUR MIGRATION
 
 import { createClient } from '@libsql/client';
-import readline from 'readline';
+import * as readline from 'readline';
 
 const rl = readline.createInterface({
   input: process.stdin,
@@ -14,32 +14,30 @@ function question(query) {
 }
 
 async function resetDatabase() {
-  console.log('╔════════════════════════════════════════╗');
-  console.log('║  ⚠️  DATABASE RESET UTILITY            ║');
-  console.log('║  CONFIDENCE BOOK V2.0                  ║');
-  console.log('╚════════════════════════════════════════╝');
-  console.log();
-  console.log('⚠️  WARNING: This will DELETE ALL DATA!');
-  console.log();
+  console.log('\n🚨 DATABASE RESET SCRIPT 🚨\n');
+  console.log('⚠️  WARNING: This will DELETE ALL DATA in the database!');
+  console.log('   - All users');
+  console.log('   - All confidences');
+  console.log('   - All reactions');
+  console.log('   - All responses\n');
   
-  const confirm1 = await question('Type "DELETE ALL DATA" to continue: ');
+  const confirm1 = await question('Type "YES" to continue: ');
   
-  if (confirm1 !== 'DELETE ALL DATA') {
-    console.log('❌ Reset cancelled.');
+  if (confirm1.trim() !== 'YES') {
+    console.log('❌ Reset cancelled');
     rl.close();
     return;
   }
   
-  const confirm2 = await question('Are you ABSOLUTELY SURE? (yes/no): ');
+  const confirm2 = await question('Are you ABSOLUTELY sure? Type "DELETE ALL DATA": ');
   
-  if (confirm2.toLowerCase() !== 'yes') {
-    console.log('❌ Reset cancelled.');
+  if (confirm2.trim() !== 'DELETE ALL DATA') {
+    console.log('❌ Reset cancelled');
     rl.close();
     return;
   }
   
-  console.log();
-  console.log('🔧 Connecting to database...');
+  console.log('\n🔧 Connecting to database...');
   
   const db = createClient({
     url: process.env.DATABASE_URL || 'file:local.db',
@@ -47,9 +45,8 @@ async function resetDatabase() {
   });
   
   try {
-    console.log('🗑️  Dropping tables...');
+    console.log('🗑️  Dropping all tables...');
     
-    // Drop toutes les tables dans l'ordre (FK constraints)
     await db.execute('DROP TABLE IF EXISTS response_reactions');
     await db.execute('DROP TABLE IF EXISTS responses');
     await db.execute('DROP TABLE IF EXISTS reactions');
@@ -58,7 +55,7 @@ async function resetDatabase() {
     
     console.log('✅ All tables dropped');
     
-    console.log('🔨 Creating fresh tables...');
+    console.log('🔧 Recreating tables...');
     
     // Users
     await db.execute(`
@@ -125,14 +122,10 @@ async function resetDatabase() {
       )
     `);
     
-    console.log('✅ Fresh tables created');
+    console.log('✅ Tables recreated');
     
-    console.log();
-    console.log('╔════════════════════════════════════════╗');
-    console.log('║  ✅ DATABASE RESET COMPLETE            ║');
-    console.log('║  All data has been erased              ║');
-    console.log('║  Fresh tables created                  ║');
-    console.log('╚════════════════════════════════════════╝');
+    console.log('\n✅ DATABASE RESET COMPLETE');
+    console.log('   All data has been deleted and tables recreated.\n');
     
   } catch (error) {
     console.error('❌ Error during reset:', error);
@@ -140,14 +133,5 @@ async function resetDatabase() {
     rl.close();
   }
 }
-
-// Usage Instructions
-console.log();
-console.log('Usage:');
-console.log('  npm run reset-db     (local)');
-console.log('  node scripts/reset-db.js   (direct)');
-console.log();
-console.log('⚠️  NEVER run this in production without backup!');
-console.log();
 
 resetDatabase();
