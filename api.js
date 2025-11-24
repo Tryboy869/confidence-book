@@ -1,5 +1,5 @@
 // api.js - API GATEWAY CONFIDENCE BOOK V2.0
-// NEXUS AXION 4.1 avec Security & Logging
+// NEXUS AXION 4.1 - Version Corrigée
 
 import express from 'express';
 import path from 'path';
@@ -57,7 +57,13 @@ async function initBackend() {
 }
 
 // ========== PAGES HTML ==========
+
+// Page d'accueil (POINT D'ENTRÉE PRINCIPAL - CORRIGÉ)
 app.get('/', (req, res) => {
+  res.sendFile(path.join(__dirname, 'welcome.html'));
+});
+
+app.get('/welcome', (req, res) => {
   res.sendFile(path.join(__dirname, 'welcome.html'));
 });
 
@@ -83,6 +89,11 @@ app.get('/settings', (req, res) => {
 
 app.get('/support', (req, res) => {
   res.sendFile(path.join(__dirname, 'support.html'));
+});
+
+// Favicon (évite les erreurs 404 - NOUVEAU)
+app.get('/favicon.ico', (req, res) => {
+  res.status(204).end();
 });
 
 // ========== API ENDPOINTS ==========
