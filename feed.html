@@ -1,272 +1,414 @@
 <!DOCTYPE html>
-<html lang="fr" class="theme-light">
+<html lang="fr">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Fil d'actualité - Confidence Book</title>
     <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://unpkg.com/lucide@latest"></script>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    
     <style>
-        body { font-family: 'Inter', sans-serif; }
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #f8f9fa;
+        }
+        
+        .dark body {
+            background-color: #111827;
+        }
         
         /* Custom Scrollbar */
-        ::-webkit-scrollbar { width: 8px; }
-        ::-webkit-scrollbar-track { background: var(--scroll-track); }
-        ::-webkit-scrollbar-thumb { background: var(--scroll-thumb); border-radius: 4px; }
-        
-        /* Theme Variables */
-        .theme-light {
-            --bg: #f8f9fa;
-            --surface: #ffffff;
-            --text-primary: #1f2937;
-            --text-secondary: #6b7280;
-            --border: #e5e7eb;
-            --scroll-track: #f1f1f1;
-            --scroll-thumb: #667eea;
+        ::-webkit-scrollbar {
+            width: 8px;
         }
         
-        .theme-dark {
-            --bg: #111827;
-            --surface: #1f2937;
-            --text-primary: #f9fafb;
-            --text-secondary: #9ca3af;
-            --border: #374151;
-            --scroll-track: #1f2937;
-            --scroll-thumb: #60a5fa;
+        ::-webkit-scrollbar-track {
+            background: #f1f1f1;
         }
         
-        body {
-            background-color: var(--bg);
-            color: var(--text-primary);
+        .dark ::-webkit-scrollbar-track {
+            background: #1f2937;
         }
         
-        .bg-surface { background-color: var(--surface); }
-        .text-primary { color: var(--text-primary); }
-        .text-secondary { color: var(--text-secondary); }
-        .border-theme { border-color: var(--border); }
-        
-        /* Reactions Modal (Long Press) */
-        .reactions-modal {
-            position: absolute;
-            bottom: 100%;
-            left: 50%;
-            transform: translateX(-50%) scale(0.8);
-            opacity: 0;
-            pointer-events: none;
-            transition: all 0.2s ease;
+        ::-webkit-scrollbar-thumb {
+            background: #d1d5db;
+            border-radius: 4px;
         }
         
-        .reactions-modal.active {
-            transform: translateX(-50%) scale(1);
-            opacity: 1;
-            pointer-events: all;
+        .dark ::-webkit-scrollbar-thumb {
+            background: #4b5563;
+        }
+        
+        ::-webkit-scrollbar-thumb:hover {
+            background: #9ca3af;
+        }
+        
+        /* Reaction Modal Animation */
+        .reaction-modal {
+            animation: slideUp 0.2s ease-out;
+        }
+        
+        @keyframes slideUp {
+            from {
+                opacity: 0;
+                transform: translateY(10px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
         }
         
         /* Reaction Animations */
         @keyframes bounce {
-            0%, 100% { transform: translateY(0); }
-            50% { transform: translateY(-10px); }
+            0%, 100% { transform: scale(1); }
+            50% { transform: scale(1.2); }
         }
         
-        .reaction-btn:hover .reaction-icon {
-            animation: bounce 0.5s ease;
-        }
-        
-        /* Donation Toast */
-        .donation-toast {
-            position: fixed;
-            bottom: 20px;
-            left: 20px;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            color: white;
-            padding: 16px 20px;
-            border-radius: 12px;
-            box-shadow: 0 8px 24px rgba(0,0,0,0.2);
-            z-index: 9999;
-            opacity: 0;
-            transform: translateY(20px);
-            transition: all 0.3s ease;
-        }
-        
-        .donation-toast.show {
-            opacity: 1;
-            transform: translateY(0);
+        .reaction-active {
+            animation: bounce 0.3s ease;
         }
     </style>
 </head>
-<body>
+
+<body class="min-h-screen">
     
     <!-- Header -->
-    <header class="bg-surface border-b border-theme sticky top-0 z-20 shadow-sm">
-        <div class="container mx-auto max-w-7xl px-4 py-3 flex items-center justify-between">
-            <div class="flex items-center space-x-4">
-                <h1 class="text-2xl font-bold text-purple-600">Confidence Book</h1>
+    <header class="bg-white dark:bg-gray-800 shadow-sm sticky top-0 z-20">
+        <div class="container mx-auto px-4 py-4 flex items-center justify-between">
+            <div class="flex items-center gap-3">
+                <i data-lucide="book-open" class="w-6 h-6 text-purple-600"></i>
+                <h1 class="text-xl font-bold text-gray-800 dark:text-white">Confidence Book</h1>
             </div>
             
-            <nav class="flex items-center space-x-4">
-                <a href="/feed" class="text-secondary hover:text-primary transition">Accueil</a>
-                <a href="/profile" class="text-secondary hover:text-primary transition">Profil</a>
-                <a href="/settings" class="text-secondary hover:text-primary transition">⚙️</a>
-                <button onclick="showModal('post-modal')" class="bg-gradient-to-r from-purple-600 to-indigo-600 text-white px-4 py-2 rounded-lg font-medium hover:shadow-lg transition">
-                    ✨ Publier
+            <div class="flex items-center gap-2">
+                <button onclick="window.location.href='/profile.html'" 
+                        class="p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700">
+                    <i data-lucide="user" class="w-5 h-5 text-gray-600 dark:text-gray-300"></i>
                 </button>
-            </nav>
+                <button onclick="window.location.href='/settings.html'" 
+                        class="p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700">
+                    <i data-lucide="settings" class="w-5 h-5 text-gray-600 dark:text-gray-300"></i>
+                </button>
+            </div>
         </div>
     </header>
     
     <!-- Main Content -->
-    <div class="container mx-auto max-w-4xl px-4 py-8">
+    <div class="container mx-auto max-w-2xl px-4 py-6 space-y-6">
         
-        <!-- Chapitres Émotionnels -->
-        <div class="mb-8 bg-surface rounded-2xl shadow-sm p-4 border border-theme">
-            <h2 class="text-sm font-semibold text-secondary uppercase mb-3">Chapitres Émotionnels</h2>
-            <div class="flex flex-wrap gap-2" id="chapters-list">
-                <button onclick="selectChapter('all')" data-chapter="all" class="chapter-btn px-4 py-2 rounded-full text-sm font-medium bg-purple-100 text-purple-700 transition">
-                    🌐 Tous
-                </button>
+        <!-- Nouvelle confidence -->
+        <div class="bg-white dark:bg-gray-800 rounded-2xl shadow-sm p-4">
+            <button onclick="showPublishModal()" 
+                    class="w-full bg-gray-100 dark:bg-gray-700 text-gray-500 dark:text-gray-400 rounded-xl p-4 text-left hover:bg-gray-200 dark:hover:bg-gray-600 transition flex items-center gap-3">
+                <i data-lucide="edit-3" class="w-5 h-5"></i>
+                Exprimez-vous en toute sécurité...
+            </button>
+        </div>
+        
+        <!-- Chapitres -->
+        <div class="bg-white dark:bg-gray-800 rounded-2xl shadow-sm p-4">
+            <h2 class="font-semibold text-gray-800 dark:text-white mb-3 flex items-center gap-2">
+                <i data-lucide="book-marked" class="w-5 h-5"></i>
+                Chapitres Émotionnels
+            </h2>
+            <div class="flex gap-2 flex-wrap" id="chapters-filter">
+                <!-- Filled by JS -->
             </div>
         </div>
         
         <!-- Feed -->
-        <div id="confidences-list" class="space-y-6">
-            <div class="text-center text-secondary py-12">
-                <p>Chargement...</p>
+        <div id="confidences-list">
+            <div class="text-center py-12">
+                <i data-lucide="loader" class="w-8 h-8 text-gray-400 animate-spin mx-auto mb-2"></i>
+                <p class="text-gray-500">Chargement...</p>
             </div>
         </div>
         
     </div>
     
-    <!-- Modal Création Confidence -->
-    <div id="post-modal" class="hidden fixed inset-0 z-50 flex items-center justify-center p-4 bg-black bg-opacity-50">
-        <div class="bg-surface rounded-2xl shadow-2xl w-full max-w-2xl p-8 max-h-[90vh] overflow-y-auto">
-            <div class="flex justify-between items-center mb-6">
-                <h2 class="text-2xl font-bold text-primary">Écrire une confidence</h2>
-                <button onclick="hideModal('post-modal')" class="text-secondary hover:text-primary transition">
-                    <svg class="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
-                    </svg>
+    <!-- Modal Publish -->
+    <div id="publish-modal" class="hidden fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50">
+        <div class="bg-white dark:bg-gray-800 rounded-2xl w-full max-w-2xl shadow-2xl">
+            <div class="p-6 border-b border-gray-200 dark:border-gray-700 flex items-center justify-between">
+                <h2 class="text-xl font-bold text-gray-800 dark:text-white">Nouvelle confidence</h2>
+                <button onclick="hidePublishModal()" class="p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700">
+                    <i data-lucide="x" class="w-5 h-5 text-gray-600 dark:text-gray-300"></i>
                 </button>
             </div>
             
-            <textarea id="confidence-text" rows="8" placeholder="Partagez votre histoire, votre peur, votre espoir..." class="w-full p-4 rounded-lg border-2 border-theme bg-surface text-primary focus:border-purple-600 focus:outline-none text-lg"></textarea>
-            
-            <div class="mt-6">
-                <label class="block text-sm font-medium text-secondary mb-2">Tonalité émotionnelle :</label>
-                <div class="flex flex-wrap gap-2" id="emotion-buttons"></div>
-            </div>
-            
-            <div id="moderation-message" class="hidden mt-4 p-4 rounded-lg bg-yellow-50 text-yellow-800"></div>
-            
-            <div class="mt-6 flex justify-end space-x-4">
-                <button onclick="hideModal('post-modal')" class="px-6 py-2 text-secondary hover:text-primary transition">Annuler</button>
-                <button onclick="publishConfidence()" class="px-6 py-3 bg-gradient-to-r from-purple-600 to-indigo-600 text-white font-medium rounded-lg hover:shadow-lg transition">
-                    Publier
-                </button>
+            <div class="p-6 space-y-4">
+                <textarea id="confidence-text" 
+                          rows="6" 
+                          class="w-full p-4 border-2 border-gray-300 dark:border-gray-600 rounded-xl focus:border-purple-600 focus:outline-none bg-white dark:bg-gray-700 text-gray-800 dark:text-white" 
+                          placeholder="Partagez votre histoire, votre peur, votre espoir..."></textarea>
+                
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Tonalité émotionnelle :</label>
+                    <div class="flex flex-wrap gap-2" id="emotion-buttons">
+                        <!-- Filled by JS -->
+                    </div>
+                </div>
+                
+                <div id="moderation-message" class="hidden bg-yellow-50 dark:bg-yellow-900/20 border-l-4 border-yellow-500 p-4 rounded">
+                    <!-- AI message -->
+                </div>
+                
+                <div class="flex justify-end gap-3">
+                    <button onclick="hidePublishModal()" 
+                            class="px-6 py-2 text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition">
+                        Annuler
+                    </button>
+                    <button onclick="publishConfidence()" 
+                            class="px-6 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition flex items-center gap-2">
+                        <i data-lucide="send" class="w-4 h-4"></i>
+                        Publier
+                    </button>
+                </div>
             </div>
         </div>
     </div>
     
+    <!-- Toast Donation -->
+    <div id="donation-toast" class="hidden"></div>
+    
     <!-- Footer -->
-    <footer class="bg-surface border-t border-theme mt-12 py-8">
-        <div class="container mx-auto max-w-7xl px-4">
-            <div class="grid grid-cols-1 md:grid-cols-3 gap-8">
-                <div>
-                    <h3 class="font-bold text-primary mb-3">Confidence Book</h3>
-                    <p class="text-sm text-secondary">Votre refuge émotionnel anonyme</p>
-                </div>
-                
-                <div>
-                    <h3 class="font-bold text-primary mb-3">Contact</h3>
-                    <div class="space-y-2 text-sm text-secondary">
-                        <a href="https://wa.me/22969056283" target="_blank" class="block hover:text-primary">📱 WhatsApp</a>
-                        <a href="mailto:nexusstudio100@gmail.com" class="block hover:text-primary">📧 Email Support</a>
-                    </div>
-                </div>
-                
-                <div>
-                    <h3 class="font-bold text-primary mb-3">Aide d'urgence</h3>
-                    <div class="space-y-1 text-sm text-secondary">
-                        <p>🇫🇷 France: 3114</p>
-                        <p>🇨🇦 Canada: 1-833-456-4566</p>
-                        <p>🇧🇪 Belgique: 0800 32 123</p>
-                        <a href="/support" class="block text-purple-600 hover:underline mt-2">💙 Soutenir le projet</a>
-                    </div>
-                </div>
+    <footer class="bg-white dark:bg-gray-800 border-t border-gray-200 dark:border-gray-700 mt-12">
+        <div class="container mx-auto px-4 py-6">
+            <div class="flex flex-wrap justify-center gap-6 text-sm text-gray-600 dark:text-gray-400">
+                <a href="https://wa.me/22969056283" target="_blank" class="hover:text-purple-600 flex items-center gap-2">
+                    <i data-lucide="phone" class="w-4 h-4"></i>
+                    WhatsApp
+                </a>
+                <a href="mailto:nexusstudio100@gmail.com" class="hover:text-purple-600 flex items-center gap-2">
+                    <i data-lucide="mail" class="w-4 h-4"></i>
+                    Support
+                </a>
+                <a href="/support.html" class="hover:text-purple-600 flex items-center gap-2">
+                    <i data-lucide="heart" class="w-4 h-4"></i>
+                    Soutenir
+                </a>
             </div>
+            <p class="text-center text-xs text-gray-500 dark:text-gray-500 mt-4">
+                Numéros d'urgence : 🇫🇷 3114 | 🇧🇪 0800 32 123 | 🇨🇦 1-833-456-4566
+            </p>
         </div>
     </footer>
     
     <script>
-        // CONFIGURATION
+        lucide.createIcons();
+        
+        const userId = localStorage.getItem('confidenceBookUserID');
+        if (!userId) {
+            window.location.href = '/auth.html';
+        }
+        
+        let currentEmotion = null;
+        let currentChapter = 'all';
+        
         const CHAPTERS = [
-            { id: 'ruptures', emoji: '💔', name: 'Ruptures & Relations' },
-            { id: 'isolement', emoji: '😔', name: 'Isolement & Tristesse' },
-            { id: 'traumas', emoji: '🔥', name: 'Traumas & Expériences' },
-            { id: 'stress', emoji: '🧠', name: 'Stress & Santé Mentale' },
-            { id: 'spiritualite', emoji: '🪞', name: 'Spiritualité & Quête' },
-            { id: 'espoir', emoji: '🤝', name: 'Espoir & Reconstruction' }
+            { id: 'ruptures', name: 'Ruptures', color: 'red' },
+            { id: 'isolement', name: 'Isolement', color: 'blue' },
+            { id: 'traumas', name: 'Traumas', color: 'orange' },
+            { id: 'stress', name: 'Stress', color: 'purple' },
+            { id: 'spiritualite', name: 'Spiritualité', color: 'indigo' },
+            { id: 'espoir', name: 'Espoir', color: 'teal' }
         ];
         
         const REACTIONS = [
-            { id: 'soutiens', emoji: '🤝', label: 'Je te soutiens', color: 'blue' },
-            { id: 'espoir', emoji: '🔥', label: 'Garde espoir', color: 'orange' },
-            { id: 'compatis', emoji: '🤜🤛', label: 'Je compatis', color: 'purple' },
-            { id: 'pas_seul', emoji: '🫂', label: 'T\'es pas seul', color: 'teal' },
-            { id: 'courage', emoji: '🙌', label: 'Courage', color: 'yellow' },
-            { id: 'triste', emoji: '💔', label: 'C\'est triste', color: 'red' }
+            { id: 'soutiens', label: 'Je te soutiens', color: 'blue' },
+            { id: 'espoir', label: 'Garde espoir', color: 'yellow' },
+            { id: 'compatis', label: 'Je compatis', color: 'purple' },
+            { id: 'pas_seul', label: 'T\'es pas seul', color: 'green' },
+            { id: 'courage', label: 'Courage', color: 'orange' },
+            { id: 'triste', label: 'Triste', color: 'red' }
         ];
         
-        let currentUserId = localStorage.getItem('user_id');
-        let currentChapter = 'all';
-        let currentEmotion = null;
-        let lastDonationPrompt = 0;
+        // ========== INIT ==========
         
-        // INIT
-        if (!currentUserId) {
-            window.location.href = '/';
-        }
-        
-        document.addEventListener('DOMContentLoaded', () => {
-            renderChapters();
+        window.addEventListener('DOMContentLoaded', () => {
+            renderChaptersFilter();
             renderEmotionButtons();
             loadConfidences();
             startDonationTimer();
         });
         
-        // CHAPITRES
-        function renderChapters() {
-            const container = document.getElementById('chapters-list');
-            const html = CHAPTERS.map(ch => `
-                <button onclick="selectChapter('${ch.id}')" data-chapter="${ch.id}" class="chapter-btn px-4 py-2 rounded-full text-sm font-medium border-2 border-gray-200 text-secondary hover:border-purple-600 hover:text-purple-600 transition">
-                    ${ch.emoji} ${ch.name}
+        // ========== CHAPTERS ==========
+        
+        function renderChaptersFilter() {
+            const container = document.getElementById('chapters-filter');
+            
+            const all = `<button onclick="selectChapter('all')" 
+                                 class="chapter-btn px-4 py-2 rounded-full bg-purple-600 text-white text-sm font-medium transition">
+                            Tous
+                         </button>`;
+            
+            const chapters = CHAPTERS.map(ch => `
+                <button onclick="selectChapter('${ch.id}')" 
+                        class="chapter-btn px-4 py-2 rounded-full border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 text-sm hover:bg-gray-100 dark:hover:bg-gray-700 transition">
+                    ${ch.name}
                 </button>
             `).join('');
             
-            container.innerHTML += html;
+            container.innerHTML = all + chapters;
         }
         
         function selectChapter(chapterId) {
             currentChapter = chapterId;
+            loadConfidences();
             
-            document.querySelectorAll('.chapter-btn').forEach(btn => {
-                if (btn.dataset.chapter === chapterId) {
-                    btn.classList.add('bg-purple-100', 'text-purple-700', 'border-purple-600');
-                    btn.classList.remove('border-gray-200', 'text-secondary');
+            document.querySelectorAll('.chapter-btn').forEach((btn, i) => {
+                if (i === 0 && chapterId === 'all') {
+                    btn.className = 'chapter-btn px-4 py-2 rounded-full bg-purple-600 text-white text-sm font-medium transition';
+                } else if (btn.textContent.trim() === CHAPTERS.find(ch => ch.id === chapterId)?.name) {
+                    btn.className = 'chapter-btn px-4 py-2 rounded-full bg-purple-600 text-white text-sm font-medium transition';
                 } else {
-                    btn.classList.remove('bg-purple-100', 'text-purple-700', 'border-purple-600');
-                    btn.classList.add('border-gray-200', 'text-secondary');
+                    btn.className = 'chapter-btn px-4 py-2 rounded-full border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 text-sm hover:bg-gray-100 dark:hover:bg-gray-700 transition';
                 }
             });
-            
-            loadConfidences();
         }
         
-        // ÉMOTIONS
+        // ========== LOAD CONFIDENCES ==========
+        
+        async function loadConfidences() {
+            console.log(`Loading confidences for chapter: ${currentChapter}`);
+            
+            try {
+                const response = await fetch(`/api/confidences?chapter=${currentChapter}`);
+                const result = await response.json();
+                
+                if (result.success) {
+                    renderConfidences(result.data);
+                } else {
+                    document.getElementById('confidences-list').innerHTML = `
+                        <div class="text-center py-12">
+                            <i data-lucide="alert-circle" class="w-8 h-8 text-gray-400 mx-auto mb-2"></i>
+                            <p class="text-gray-500">Erreur lors du chargement</p>
+                        </div>
+                    `;
+                }
+            } catch (error) {
+                console.error('Error:', error);
+                document.getElementById('confidences-list').innerHTML = `
+                    <div class="text-center py-12">
+                        <i data-lucide="wifi-off" class="w-8 h-8 text-gray-400 mx-auto mb-2"></i>
+                        <p class="text-gray-500">Erreur de connexion</p>
+                    </div>
+                `;
+            }
+            
+            lucide.createIcons();
+        }
+        
+        function renderConfidences(confidences) {
+            const container = document.getElementById('confidences-list');
+            
+            if (confidences.length === 0) {
+                container.innerHTML = `
+                    <div class="text-center py-12">
+                        <i data-lucide="inbox" class="w-12 h-12 text-gray-400 mx-auto mb-3"></i>
+                        <p class="text-gray-500">Aucune confidence pour le moment</p>
+                        <p class="text-sm text-gray-400 mt-2">Soyez le premier à partager</p>
+                    </div>
+                `;
+                lucide.createIcons();
+                return;
+            }
+            
+            const html = confidences.map(conf => renderConfidence(conf)).join('');
+            container.innerHTML = html;
+            lucide.createIcons();
+        }
+        
+        function renderConfidence(conf) {
+            const chapter = CHAPTERS.find(ch => ch.id === conf.emotion) || CHAPTERS[0];
+            const isOwner = conf.user_id === userId;
+            
+            const ownerActions = isOwner ? `
+                <div class="flex gap-2">
+                    <button onclick="editConfidence('${conf.id}')" class="text-sm text-blue-600 hover:underline flex items-center gap-1">
+                        <i data-lucide="edit-2" class="w-3 h-3"></i>
+                        Modifier
+                    </button>
+                    <button onclick="deleteConfidence('${conf.id}')" class="text-sm text-red-600 hover:underline flex items-center gap-1">
+                        <i data-lucide="trash-2" class="w-3 h-3"></i>
+                        Supprimer
+                    </button>
+                </div>
+            ` : '';
+            
+            return `
+                <article class="bg-white dark:bg-gray-800 rounded-2xl shadow-sm overflow-hidden mb-4">
+                    <div class="p-4 border-b border-gray-200 dark:border-gray-700 flex items-center justify-between">
+                        <div class="flex items-center gap-2">
+                            <div class="w-10 h-10 rounded-full bg-${chapter.color}-100 dark:bg-${chapter.color}-900 flex items-center justify-center">
+                                <i data-lucide="heart" class="w-5 h-5 text-${chapter.color}-600"></i>
+                            </div>
+                            <div>
+                                <p class="text-xs text-gray-500 dark:text-gray-400">Confidence</p>
+                                <p class="text-sm font-medium text-gray-800 dark:text-white">${chapter.name}</p>
+                            </div>
+                        </div>
+                        ${ownerActions}
+                    </div>
+                    
+                    <div class="p-4">
+                        <p class="text-gray-800 dark:text-gray-200 leading-relaxed">${escapeHtml(conf.content)}</p>
+                    </div>
+                    
+                    <div class="p-4 border-t border-gray-200 dark:border-gray-700">
+                        <div class="flex items-center gap-4 mb-3">
+                            <button onclick="showReactionModal(event, '${conf.id}')" 
+                                    oncontextmenu="showReactionModal(event, '${conf.id}'); return false;"
+                                    class="flex items-center gap-2 px-4 py-2 rounded-full bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600 transition">
+                                <i data-lucide="heart" class="w-4 h-4"></i>
+                                <span class="text-sm font-medium">${getTotalReactions(conf.reactions)}</span>
+                            </button>
+                            <button onclick="window.location.href='/confidence.html?id=${conf.id}'" 
+                                    class="flex items-center gap-2 px-4 py-2 rounded-full bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600 transition">
+                                <i data-lucide="message-circle" class="w-4 h-4"></i>
+                                <span class="text-sm font-medium">${conf.responses?.length || 0}</span>
+                            </button>
+                        </div>
+                    </div>
+                </article>
+            `;
+        }
+        
+        function getTotalReactions(reactions) {
+            return Object.values(reactions).reduce((a, b) => a + b, 0);
+        }
+        
+        function escapeHtml(text) {
+            const div = document.createElement('div');
+            div.textContent = text;
+            return div.innerHTML;
+        }
+        
+        // ========== PUBLISH ==========
+        
+        function showPublishModal() {
+            document.getElementById('publish-modal').classList.remove('hidden');
+        }
+        
+        function hidePublishModal() {
+            document.getElementById('publish-modal').classList.add('hidden');
+            document.getElementById('confidence-text').value = '';
+            currentEmotion = null;
+            document.querySelectorAll('.emotion-btn').forEach(btn => {
+                btn.classList.remove('ring-2', 'ring-purple-600');
+            });
+        }
+        
         function renderEmotionButtons() {
             const container = document.getElementById('emotion-buttons');
+            
             const html = CHAPTERS.map(ch => `
-                <button onclick="selectEmotion('${ch.id}')" data-emotion="${ch.id}" class="emotion-btn px-4 py-2 rounded-full text-sm font-medium border-2 border-gray-300 text-secondary hover:border-purple-600 transition">
-                    ${ch.emoji} ${ch.name.split('&')[0].trim()}
+                <button onclick="selectEmotion('${ch.id}')" 
+                        data-emotion="${ch.id}"
+                        class="emotion-btn px-4 py-2 border-2 border-gray-300 dark:border-gray-600 rounded-full text-sm hover:border-${ch.color}-500 transition">
+                    ${ch.name}
                 </button>
             `).join('');
             
@@ -278,96 +420,18 @@
             
             document.querySelectorAll('.emotion-btn').forEach(btn => {
                 if (btn.dataset.emotion === emotionId) {
-                    btn.classList.add('border-purple-600', 'bg-purple-100', 'text-purple-700');
+                    btn.classList.add('ring-2', 'ring-purple-600', 'border-purple-600');
                 } else {
-                    btn.classList.remove('border-purple-600', 'bg-purple-100', 'text-purple-700');
+                    btn.classList.remove('ring-2', 'ring-purple-600', 'border-purple-600');
                 }
             });
         }
         
-        // CONFIDENCES
-        async function loadConfidences() {
-            try {
-                const response = await fetch(`/api/confidences?chapter=${currentChapter}`);
-                const result = await response.json();
-                
-                if (result.success) {
-                    renderConfidences(result.data);
-                }
-            } catch (error) {
-                console.error('Error loading confidences:', error);
-            }
-        }
-        
-        function renderConfidences(confidences) {
-            const container = document.getElementById('confidences-list');
-            
-            if (confidences.length === 0) {
-                container.innerHTML = '<div class="text-center text-secondary py-12"><p>Aucune confidence pour le moment. Soyez le premier à partager.</p></div>';
-                return;
-            }
-            
-            const html = confidences.map(conf => renderConfidence(conf)).join('');
-            container.innerHTML = html;
-        }
-        
-        function renderConfidence(conf) {
-            const chapter = CHAPTERS.find(ch => ch.id === conf.emotion) || CHAPTERS[0];
-            const isOwner = conf.user_id === currentUserId;
-            
-            const ownerActions = isOwner ? `
-                <div class="flex gap-2 ml-auto">
-                    <button onclick="editConfidence('${conf.id}')" class="text-sm text-blue-600 hover:underline">✏️</button>
-                    <button onclick="deleteConfidence('${conf.id}')" class="text-sm text-red-600 hover:underline">🗑️</button>
-                </div>
-            ` : '';
-            
-            return `
-                <article class="bg-surface rounded-2xl shadow-sm border border-theme overflow-hidden">
-                    <div class="p-5 flex items-center space-x-3 border-b border-theme">
-                        <div class="w-11 h-11 rounded-full bg-${chapter.id}-100 flex items-center justify-center">
-                            <span class="text-2xl">${chapter.emoji}</span>
-                        </div>
-                        <div class="flex-1">
-                            <p class="text-xs text-secondary">${chapter.name}</p>
-                            <p class="text-xs text-secondary">${new Date(conf.created_at).toLocaleDateString('fr-FR')}</p>
-                        </div>
-                        ${ownerActions}
-                    </div>
-                    
-                    <div class="p-5">
-                        <p class="text-lg leading-relaxed" id="conf-content-${conf.id}">${escapeHtml(conf.content)}</p>
-                    </div>
-                    
-                    <div class="p-5 border-t border-theme">
-                        <div class="flex flex-wrap gap-2">
-                            ${REACTIONS.map(r => `
-                                <button onclick="react('${conf.id}', '${r.id}')" class="px-3 py-2 rounded-full text-sm border border-theme hover:border-${r.color}-500 transition">
-                                    ${r.emoji} ${conf.reactions[r.id] || 0}
-                                </button>
-                            `).join('')}
-                        </div>
-                        
-                        <button onclick="window.location.href='/confidence/${conf.id}'" class="mt-4 w-full text-sm text-secondary hover:text-primary transition text-left">
-                            💬 ${conf.responses?.length || 0} réponse(s) → Voir la conversation
-                        </button>
-                    </div>
-                </article>
-            `;
-        }
-        
-        function escapeHtml(text) {
-            const div = document.createElement('div');
-            div.textContent = text;
-            return div.innerHTML;
-        }
-        
-        // PUBLISH
         async function publishConfidence() {
             const text = document.getElementById('confidence-text').value.trim();
             
-            if (!text || text.length < 10) {
-                alert('La confidence doit contenir au moins 10 caractères');
+            if (!text) {
+                alert('Veuillez écrire votre confidence');
                 return;
             }
             
@@ -381,7 +445,7 @@
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json',
-                        'X-User-Id': currentUserId
+                        'X-User-Id': userId
                     },
                     body: JSON.stringify({
                         content: text,
@@ -391,98 +455,83 @@
                 
                 const result = await response.json();
                 
-                if (result.success && result.published) {
-                    document.getElementById('confidence-text').value = '';
-                    currentEmotion = null;
-                    document.querySelectorAll('.emotion-btn').forEach(btn => {
-                        btn.classList.remove('border-purple-600', 'bg-purple-100', 'text-purple-700');
-                    });
+                if (result.success) {
+                    if (result.moderated) {
+                        const msg = document.getElementById('moderation-message');
+                        msg.classList.remove('hidden');
+                        msg.innerHTML = `
+                            <p class="font-medium mb-2 flex items-center gap-2">
+                                <i data-lucide="alert-triangle" class="w-5 h-5"></i>
+                                Votre confidence a été examinée
+                            </p>
+                            <p class="text-sm">${result.moderationMessage}</p>
+                        `;
+                        lucide.createIcons();
+                        
+                        setTimeout(() => {
+                            msg.classList.add('hidden');
+                        }, 5000);
+                    }
                     
-                    hideModal('post-modal');
-                    await loadConfidences();
+                    if (result.published) {
+                        hidePublishModal();
+                        await loadConfidences();
+                    }
                 } else {
-                    const msgEl = document.getElementById('moderation-message');
-                    msgEl.classList.remove('hidden');
-                    msgEl.textContent = result.moderationMessage || result.message;
+                    alert(result.message || 'Erreur lors de la publication');
                 }
             } catch (error) {
                 console.error('Error:', error);
-                alert('Erreur lors de la publication');
+                alert('Erreur de connexion');
             }
         }
         
-        // REACT
-        async function react(confidenceId, reactionType) {
-            try {
-                await fetch('/api/reactions', {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                        'X-User-Id': currentUserId
-                    },
-                    body: JSON.stringify({ confidenceId, reactionType })
-                });
-                
-                await loadConfidences();
-            } catch (error) {
-                console.error('Error:', error);
-            }
+        // ========== REACTIONS ==========
+        
+        function showReactionModal(event, confidenceId) {
+            event.preventDefault();
+            event.stopPropagation();
+            
+            // TODO: Implement reaction modal with 6 reactions
+            console.log('Show reaction modal for:', confidenceId);
         }
         
-        // DELETE
-        async function deleteConfidence(id) {
+        // ========== EDIT/DELETE ==========
+        
+        function editConfidence(confidenceId) {
+            // Réouvrir modal avec contenu
+            showPublishModal();
+            // TODO: Load confidence content
+        }
+        
+        async function deleteConfidence(confidenceId) {
             if (!confirm('Supprimer cette confidence ?')) return;
             
             try {
-                await fetch(`/api/confidences/${id}`, {
+                const response = await fetch(`/api/confidences/${confidenceId}`, {
                     method: 'DELETE',
-                    headers: { 'X-User-Id': currentUserId }
+                    headers: {
+                        'X-User-Id': userId
+                    }
                 });
                 
-                await loadConfidences();
+                const result = await response.json();
+                
+                if (result.success) {
+                    await loadConfidences();
+                } else {
+                    alert(result.message);
+                }
             } catch (error) {
                 console.error('Error:', error);
+                alert('Erreur de connexion');
             }
         }
         
-        // EDIT
-        async function editConfidence(id) {
-            const contentEl = document.getElementById(`conf-content-${id}`);
-            const currentContent = contentEl.textContent;
-            
-            // Ouvrir modal avec contenu pré-rempli
-            document.getElementById('confidence-text').value = currentContent;
-            showModal('post-modal');
-            
-            // Changer le comportement du bouton publier
-            const publishBtn = document.querySelector('#post-modal button[onclick="publishConfidence()"]');
-            publishBtn.textContent = 'Mettre à jour';
-            publishBtn.onclick = async () => {
-                const newContent = document.getElementById('confidence-text').value.trim();
-                
-                try {
-                    await fetch(`/api/confidences/${id}`, {
-                        method: 'PUT',
-                        headers: {
-                            'Content-Type': 'application/json',
-                            'X-User-Id': currentUserId
-                        },
-                        body: JSON.stringify({ content: newContent })
-                    });
-                    
-                    hideModal('post-modal');
-                    await loadConfidences();
-                    
-                    // Restaurer le bouton
-                    publishBtn.textContent = 'Publier';
-                    publishBtn.onclick = publishConfidence;
-                } catch (error) {
-                    console.error('Error:', error);
-                }
-            };
-        }
+        // ========== DONATION TOAST ==========
         
-        // DONATION TOAST
+        let lastDonationPrompt = 0;
+        
         function startDonationTimer() {
             setInterval(() => {
                 const now = Date.now();
@@ -496,36 +545,34 @@
         
         function showDonationToast() {
             const toast = document.createElement('div');
-            toast.className = 'donation-toast';
+            toast.className = 'fixed bottom-6 left-6 bg-gradient-to-r from-purple-600 to-indigo-600 text-white p-4 rounded-xl shadow-2xl z-50 max-w-sm opacity-0 transform translate-y-4 transition-all duration-300';
             toast.innerHTML = `
                 <div class="flex items-center gap-3">
-                    <span class="text-3xl">💙</span>
-                    <div>
-                        <strong>Aimez-vous Confidence Book?</strong>
+                    <i data-lucide="heart" class="w-8 h-8 flex-shrink-0"></i>
+                    <div class="flex-1">
+                        <strong class="block mb-1">Aimez-vous Confidence Book?</strong>
                         <p class="text-sm opacity-90">Soutenez-nous pour rester gratuit</p>
                     </div>
-                    <button onclick="window.location.href='/support'" class="bg-white text-purple-600 px-4 py-2 rounded-lg font-medium ml-4">Faire un don</button>
-                    <button onclick="this.parentElement.parentElement.remove()" class="text-white opacity-70 hover:opacity-100">✕</button>
+                    <button onclick="window.location.href='/support.html'" class="bg-white text-purple-600 px-4 py-2 rounded-lg font-medium text-sm hover:bg-gray-100 transition">
+                        Faire un don
+                    </button>
+                    <button onclick="this.parentElement.parentElement.remove()" class="text-white/70 hover:text-white ml-2">
+                        <i data-lucide="x" class="w-5 h-5"></i>
+                    </button>
                 </div>
             `;
             
             document.body.appendChild(toast);
-            
-            setTimeout(() => toast.classList.add('show'), 100);
+            lucide.createIcons();
             
             setTimeout(() => {
-                toast.classList.remove('show');
+                toast.classList.remove('opacity-0', 'translate-y-4');
+            }, 100);
+            
+            setTimeout(() => {
+                toast.classList.add('opacity-0', 'translate-y-4');
                 setTimeout(() => toast.remove(), 300);
             }, 5000);
-        }
-        
-        // MODALS
-        function showModal(id) {
-            document.getElementById(id).classList.remove('hidden');
-        }
-        
-        function hideModal(id) {
-            document.getElementById(id).classList.add('hidden');
         }
     </script>
     
