@@ -6,13 +6,13 @@
     <title>Confidence Book - Votre Refuge Émotionnel</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <script src="https://unpkg.com/lucide@latest"></script>
     <style>
         body {
             font-family: 'Inter', sans-serif;
             background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
         }
-        
-        /* Custom Scrollbar */
+
         ::-webkit-scrollbar {
             width: 8px;
         }
@@ -26,11 +26,11 @@
         ::-webkit-scrollbar-thumb:hover {
             background: rgba(255,255,255,0.5);
         }
-        
+
         .fade-in {
             animation: fadeIn 0.6s ease-in;
         }
-        
+
         @keyframes fadeIn {
             from { opacity: 0; transform: translateY(20px); }
             to { opacity: 1; transform: translateY(0); }
@@ -38,19 +38,21 @@
     </style>
 </head>
 <body class="min-h-screen flex items-center justify-center p-4">
-    
+
     <div class="max-w-4xl w-full bg-white rounded-3xl shadow-2xl overflow-hidden fade-in">
-        
+
         <!-- Header -->
         <div class="bg-gradient-to-r from-purple-600 to-indigo-600 text-white p-12 text-center">
-            <div class="text-6xl mb-4">📖</div>
+            <div class="flex justify-center mb-4">
+                <i data-lucide="book-open" class="w-16 h-16"></i>
+            </div>
             <h1 class="text-4xl font-bold mb-3">Confidence Book</h1>
             <p class="text-xl opacity-90">Votre refuge émotionnel anonyme</p>
         </div>
-        
+
         <!-- Content -->
         <div class="p-8 md:p-12">
-            
+
             <!-- Mission -->
             <section class="mb-10">
                 <h2 class="text-2xl font-bold text-gray-800 mb-4">Notre Mission</h2>
@@ -59,46 +61,49 @@
                     <strong>Anonymement. Sans jugement.</strong>
                 </p>
             </section>
-            
+
             <!-- Règles -->
             <section class="mb-10 bg-blue-50 rounded-2xl p-6">
-                <h2 class="text-2xl font-bold text-gray-800 mb-4">📜 Nos Règles de Bienveillance</h2>
-                
+                <div class="flex items-center space-x-2 mb-4">
+                    <i data-lucide="scroll-text" class="w-6 h-6 text-gray-800"></i>
+                    <h2 class="text-2xl font-bold text-gray-800">Nos Règles de Bienveillance</h2>
+                </div>
+
                 <div class="space-y-4 text-gray-700">
                     <div class="flex items-start space-x-3">
-                        <span class="text-2xl">✅</span>
+                        <i data-lucide="check-circle" class="w-6 h-6 text-green-500 flex-shrink-0 mt-1"></i>
                         <div>
                             <strong>Exprimez-vous librement :</strong>
                             <p class="text-sm">Tristesse, colère, peur, solitude, désespoir... Toutes les émotions sont légitimes ici.</p>
                         </div>
                     </div>
-                    
+
                     <div class="flex items-start space-x-3">
-                        <span class="text-2xl">✅</span>
+                        <i data-lucide="check-circle" class="w-6 h-6 text-green-500 flex-shrink-0 mt-1"></i>
                         <div>
                             <strong>Appelez à l'aide :</strong>
                             <p class="text-sm">Pensées suicidaires, détresse mentale... Nous sommes là pour vous écouter et vous orienter.</p>
                         </div>
                     </div>
-                    
+
                     <div class="flex items-start space-x-3">
-                        <span class="text-2xl">✅</span>
+                        <i data-lucide="check-circle" class="w-6 h-6 text-green-500 flex-shrink-0 mt-1"></i>
                         <div>
                             <strong>Partagez vos traumas :</strong>
                             <p class="text-sm">Abus, deuil, ruptures... Votre histoire mérite d'être entendue.</p>
                         </div>
                     </div>
-                    
+
                     <div class="flex items-start space-x-3">
-                        <span class="text-2xl">❌</span>
+                        <i data-lucide="x-circle" class="w-6 h-6 text-red-500 flex-shrink-0 mt-1"></i>
                         <div>
                             <strong>Pas de violence :</strong>
                             <p class="text-sm">Menaces, incitations à la haine, discrimination ne sont pas tolérées.</p>
                         </div>
                     </div>
-                    
+
                     <div class="flex items-start space-x-3">
-                        <span class="text-2xl">❌</span>
+                        <i data-lucide="x-circle" class="w-6 h-6 text-red-500 flex-shrink-0 mt-1"></i>
                         <div>
                             <strong>Pas de spam :</strong>
                             <p class="text-sm">Publicités, contenus hors-sujet, informations personnelles identifiables.</p>
@@ -106,53 +111,60 @@
                     </div>
                 </div>
             </section>
-            
+
             <!-- Anonymat -->
             <section class="mb-10">
-                <h2 class="text-2xl font-bold text-gray-800 mb-4">🔒 Votre Anonymat est Sacré</h2>
+                <div class="flex items-center space-x-2 mb-4">
+                    <i data-lucide="lock" class="w-6 h-6 text-gray-800"></i>
+                    <h2 class="text-2xl font-bold text-gray-800">Votre Anonymat est Sacré</h2>
+                </div>
                 <ul class="space-y-2 text-gray-700">
                     <li class="flex items-center space-x-2">
-                        <span class="text-green-500">✓</span>
+                        <i data-lucide="check" class="w-5 h-5 text-green-500"></i>
                         <span>Aucune donnée personnelle requise</span>
                     </li>
                     <li class="flex items-center space-x-2">
-                        <span class="text-green-500">✓</span>
+                        <i data-lucide="check" class="w-5 h-5 text-green-500"></i>
                         <span>Identifiant anonyme unique</span>
                     </li>
                     <li class="flex items-center space-x-2">
-                        <span class="text-green-500">✓</span>
+                        <i data-lucide="check" class="w-5 h-5 text-green-500"></i>
                         <span>Pas de tracking, pas de publicité</span>
                     </li>
                     <li class="flex items-center space-x-2">
-                        <span class="text-green-500">✓</span>
+                        <i data-lucide="check" class="w-5 h-5 text-green-500"></i>
                         <span>Vos messages expirent après 3 mois</span>
                     </li>
                 </ul>
             </section>
-            
+
             <!-- CTA -->
             <div class="text-center space-y-4">
                 <button onclick="acceptRules()" 
-                        class="w-full bg-gradient-to-r from-purple-600 to-indigo-600 text-white font-bold py-4 px-8 rounded-xl text-lg shadow-lg hover:shadow-xl transform hover:scale-105 transition-all duration-300">
-                    ✨ J'accepte et je crée mon espace anonyme
+                        class="w-full bg-gradient-to-r from-purple-600 to-indigo-600 text-white font-bold py-4 px-8 rounded-xl text-lg shadow-lg hover:shadow-xl transform hover:scale-105 transition-all duration-300 flex items-center justify-center space-x-2">
+                    <i data-lucide="sparkles" class="w-5 h-5"></i>
+                    <span>J'accepte et je crée mon espace anonyme</span>
                 </button>
-                
+
                 <button onclick="window.location.href='/auth?mode=login'" 
                         class="w-full bg-gray-100 text-gray-700 font-medium py-3 px-6 rounded-xl hover:bg-gray-200 transition">
                     J'ai déjà un ID anonyme
                 </button>
             </div>
-            
+
         </div>
-        
+
     </div>
-    
+
     <script>
+        // Initialiser Lucide Icons
+        lucide.createIcons();
+
         function acceptRules() {
             localStorage.setItem('rules_accepted', 'true');
             window.location.href = '/auth?mode=create';
         }
     </script>
-    
+
 </body>
 </html>
