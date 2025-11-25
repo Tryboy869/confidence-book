@@ -1,0 +1,150 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Admin Dashboard - Confidence Book</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://unpkg.com/lucide@latest"></script>
+  <style>
+    body { background: #0a0a0f; color: #e8e8f0; }
+    ::-webkit-scrollbar { width: 8px; }
+    ::-webkit-scrollbar-track { background: #1a1a24; }
+    ::-webkit-scrollbar-thumb { background: #6b8cff; border-radius: 4px; }
+  </style>
+</head>
+<body class="p-6">
+  <div class="max-w-6xl mx-auto">
+    <div class="flex items-center gap-3 mb-6">
+      <i data-lucide="shield-check" class="w-10 h-10 text-purple-500"></i>
+      <h1 class="text-3xl font-bold">Security Dashboard - Confidence Book</h1>
+    </div>
+
+    <div class="grid grid-cols-2 md:grid-cols-6 gap-4 mb-6" id="stats"></div>
+
+    <div class="bg-gray-900 rounded-2xl p-6">
+      <div class="flex items-center gap-3 mb-4">
+        <i data-lucide="activity" class="w-6 h-6 text-purple-500"></i>
+        <h2 class="text-xl font-bold">Recent Logs (Auto-refresh 5s)</h2>
+      </div>
+      <div id="logs" class="space-y-2 max-h-96 overflow-y-auto"></div>
+    </div>
+  </div>
+
+  <script>
+    const ADMIN_KEY = prompt('Enter admin key:');
+    
+    async function loadStats() {
+      try {
+        const response = await fetch('/api/admin/stats', {
+          headers: { 'X-Admin-Key': ADMIN_KEY }
+        });
+        
+        const data = await response.json();
+        
+        if (!data.success) {
+          alert('Invalid admin key');
+          return;
+        }
+        
+        const stats = data.stats;
+        
+        document.getElementById('stats').innerHTML = `
+          <div class="bg-gray-900 rounded-xl p-4">
+            <div class="text-3xl font-bold text-purple-400">${stats.total}</div>
+            <div class="text-sm text-gray-400 flex items-center gap-1 mt-1">
+              <i data-lucide="list" class="w-4 h-4"></i>
+              Total Events (24h)
+            </div>
+          </div>
+          <div class="bg-gray-900 rounded-xl p-4">
+            <div class="text-3xl font-bold text-green-400">${stats.byLevel.INFO}</div>
+            <div class="text-sm text-gray-400 flex items-center gap-1 mt-1">
+              <i data-lucide="info" class="w-4 h-4"></i>
+              INFO
+            </div>
+          </div>
+          <div class="bg-gray-900 rounded-xl p-4">
+            <div class="text-3xl font-bold text-yellow-400">${stats.byLevel.WARN}</div>
+            <div class="text-sm text-gray-400 flex items-center gap-1 mt-1">
+              <i data-lucide="alert-triangle" class="w-4 h-4"></i>
+              WARNINGS
+            </div>
+          </div>
+          <div class="bg-gray-900 rounded-xl p-4">
+            <div class="text-3xl font-bold text-red-400">${stats.byLevel.ERROR}</div>
+            <div class="text-sm text-gray-400 flex items-center gap-1 mt-1">
+              <i data-lucide="x-circle" class="w-4 h-4"></i>
+              ERRORS
+            </div>
+          </div>
+          <div class="bg-gray-900 rounded-xl p-4">
+            <div class="text-3xl font-bold text-pink-400">${stats.byLevel.SECURITY}</div>
+            <div class="text-sm text-gray-400 flex items-center gap-1 mt-1">
+              <i data-lucide="shield-alert" class="w-4 h-4"></i>
+              SECURITY
+            </div>
+          </div>
+          <div class="bg-gray-900 rounded-xl p-4">
+            <div class="text-3xl font-bold text-red-400">${stats.blockedIPs.length}</div>
+            <div class="text-sm text-gray-400 flex items-center gap-1 mt-1">
+              <i data-lucide="ban" class="w-4 h-4"></i>
+              Blocked IPs
+            </div>
+          </div>
+        `;
+        
+        lucide.createIcons();
+      } catch (error) {
+        console.error('Error loading stats:', error);
+      }
+    }
+    
+    async function loadLogs() {
+      try {
+        const response = await fetch('/api/admin/logs', {
+          headers: { 'X-Admin-Key': ADMIN_KEY }
+        });
+        
+        const data = await response.json();
+        
+        if (!data.success) return;
+        
+        const logsHTML = data.logs.slice(0, 50).map(log => {
+          const colors = {
+            INFO: 'border-green-500 bg-green-500/10',
+            WARN: 'border-yellow-500 bg-yellow-500/10',
+            ERROR: 'border-red-500 bg-red-500/10',
+            SECURITY: 'border-pink-500 bg-pink-500/10'
+          };
+          
+          return `
+            <div class="border-l-4 ${colors[log.level]} rounded p-3">
+              <div class="flex items-center gap-2 mb-1">
+                <span class="text-xs text-gray-500">${new Date(log.timestamp).toLocaleString()}</span>
+                <span class="text-xs font-bold">[${log.level}]</span>
+                <span class="text-xs">[${log.type}]</span>
+              </div>
+              <pre class="text-xs overflow-x-auto">${JSON.stringify(log, null, 2).substring(0, 300)}</pre>
+            </div>
+          `;
+        }).join('');
+        
+        document.getElementById('logs').innerHTML = logsHTML;
+      } catch (error) {
+        console.error('Error loading logs:', error);
+      }
+    }
+    
+    loadStats();
+    loadLogs();
+    
+    setInterval(() => {
+      loadStats();
+      loadLogs();
+    }, 5000);
+    
+    lucide.createIcons();
+  </script>
+</body>
+</html>
