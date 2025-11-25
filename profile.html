@@ -1,153 +1,142 @@
 <!DOCTYPE html>
 <html lang="fr">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Mon Profil - Confidence Book</title>
-    <script src="https://cdn.tailwindcss.com"></script>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
-    <style>
-        body { font-family: 'Inter', sans-serif; }
-        ::-webkit-scrollbar { width: 8px; }
-        ::-webkit-scrollbar-track { background: #f1f1f1; }
-        ::-webkit-scrollbar-thumb { background: #667eea; border-radius: 4px; }
-    </style>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Profile - Confidence Book</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://unpkg.com/lucide@latest"></script>
+  <script src="/assets/translations.js"></script>
+  <style>
+    body.dark { background: #0a0a0f; color: #e8e8f0; }
+    body.light { background: #f8f9fa; color: #1f2937; }
+    .card-dark { background: #1a1a24; }
+    .card-light { background: #ffffff; }
+    ::-webkit-scrollbar { width: 8px; }
+    ::-webkit-scrollbar-track { background: #f1f1f1; }
+    ::-webkit-scrollbar-thumb { background: #d1d5db; border-radius: 4px; }
+  </style>
 </head>
-<body class="bg-gray-50 min-h-screen">
-    
-    <header class="bg-white border-b sticky top-0 z-20 shadow-sm">
-        <div class="container mx-auto max-w-4xl px-4 py-3 flex items-center justify-between">
-            <a href="/feed" class="text-gray-600 hover:text-gray-900">← Retour au fil</a>
-            <h1 class="text-xl font-bold text-purple-600">Mon Profil</h1>
-            <a href="/settings" class="text-gray-600 hover:text-gray-900">⚙️</a>
+<body class="dark p-6">
+  <div class="max-w-4xl mx-auto">
+    <button onclick="location.href='/feed.html'" class="flex items-center gap-2 text-purple-400 hover:text-purple-300 mb-6 transition">
+      <i data-lucide="arrow-left" class="w-5 h-5"></i>
+      <span id="back-btn">Retour</span>
+    </button>
+
+    <div class="card-dark rounded-2xl p-6 mb-6">
+      <div class="text-center mb-6">
+        <i data-lucide="user-circle" class="w-20 h-20 mx-auto text-purple-500 mb-3"></i>
+        <h1 class="text-2xl font-bold mb-2" id="page-title"></h1>
+        <p class="text-purple-400" id="member-status"></p>
+      </div>
+
+      <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
+        <div class="text-center">
+          <div class="text-3xl font-bold text-purple-400" id="stat-confidences">0</div>
+          <div class="text-sm text-gray-400" id="stat-confidences-label"></div>
+          <div class="text-xs text-gray-500" id="stat-limit"></div>
         </div>
-    </header>
-    
-    <div class="container mx-auto max-w-4xl px-4 py-8">
-        
-        <!-- Stats Card -->
-        <div class="bg-gradient-to-r from-purple-600 to-indigo-600 rounded-2xl shadow-xl p-8 text-white mb-8">
-            <div class="flex items-center space-x-4 mb-6">
-                <div class="w-20 h-20 rounded-full bg-white bg-opacity-20 flex items-center justify-center text-4xl" id="user-avatar">
-                    📖
-                </div>
-                <div>
-                    <p class="text-sm opacity-80">Mon ID anonyme</p>
-                    <p class="text-2xl font-bold" id="user-id">CB_xxxxxxxx</p>
-                    <p class="text-sm opacity-80 mt-1">Membre depuis <span id="join-date">...</span></p>
-                </div>
-            </div>
-            
-            <div class="grid grid-cols-3 gap-4">
-                <div class="text-center">
-                    <p class="text-3xl font-bold" id="stat-confidences">0</p>
-                    <p class="text-sm opacity-80">Confidences</p>
-                </div>
-                <div class="text-center">
-                    <p class="text-3xl font-bold" id="stat-reactions">0</p>
-                    <p class="text-sm opacity-80">Réactions reçues</p>
-                </div>
-                <div class="text-center">
-                    <p class="text-3xl font-bold" id="stat-responses">0</p>
-                    <p class="text-sm opacity-80">Réponses reçues</p>
-                </div>
-            </div>
+        <div class="text-center">
+          <div class="text-3xl font-bold text-purple-400" id="stat-reactions">0</div>
+          <div class="text-sm text-gray-400" id="stat-reactions-label"></div>
         </div>
-        
-        <!-- Mes Confidences -->
-        <div class="bg-white rounded-2xl shadow-sm border p-6">
-            <h2 class="text-2xl font-bold text-gray-800 mb-6">📝 Mes Confidences</h2>
-            
-            <div id="my-confidences-list" class="space-y-4">
-                <p class="text-center text-gray-500 py-8">Chargement...</p>
-            </div>
+        <div class="text-center">
+          <div class="text-3xl font-bold text-purple-400" id="stat-responses">0</div>
+          <div class="text-sm text-gray-400" id="stat-responses-label"></div>
         </div>
-        
+        <div class="text-center">
+          <div class="text-3xl font-bold text-purple-400" id="stat-helped">0</div>
+          <div class="text-sm text-gray-400" id="stat-helped-label"></div>
+        </div>
+      </div>
+
+      <div id="premium-section" class="hidden bg-purple-600/10 rounded-xl p-4 border-2 border-purple-600/30">
+        <h3 class="font-bold mb-2" id="upgrade-title"></h3>
+        <p class="text-sm text-gray-400 mb-3" id="upgrade-description"></p>
+        <button onclick="location.href='/premium.html'" class="w-full bg-gradient-to-r from-purple-600 to-indigo-600 text-white font-semibold py-2 rounded-lg" id="learn-more-btn"></button>
+      </div>
     </div>
-    
-    <script>
-        const currentUserId = localStorage.getItem('user_id');
-        
-        if (!currentUserId) {
-            window.location.href = '/';
-        }
-        
-        document.addEventListener('DOMContentLoaded', () => {
-            loadProfile();
+
+    <div class="card-dark rounded-2xl p-6">
+      <h2 class="text-xl font-bold mb-4" id="my-confidences-title"></h2>
+      <div id="confidences-container"></div>
+    </div>
+  </div>
+
+  <script>
+    const userId = localStorage.getItem('confidenceBookUserID');
+    if (!userId) location.href = '/auth.html';
+
+    const lang = getCurrentLanguage();
+
+    document.getElementById('page-title').textContent = t('profile.title', lang);
+    document.getElementById('stat-confidences-label').textContent = t('profile.confidences_count', lang);
+    document.getElementById('stat-reactions-label').textContent = t('profile.reactions_received', lang);
+    document.getElementById('stat-responses-label').textContent = t('profile.responses_received', lang);
+    document.getElementById('stat-helped-label').textContent = t('profile.people_helped', lang);
+    document.getElementById('upgrade-title').textContent = t('profile.upgrade_title', lang);
+    document.getElementById('upgrade-description').textContent = t('profile.upgrade_description', lang);
+    document.getElementById('learn-more-btn').textContent = t('profile.learn_more', lang);
+    document.getElementById('my-confidences-title').textContent = t('profile.my_confidences', lang);
+
+    async function loadProfile() {
+      try {
+        const response = await fetch('/api/profile', {
+          headers: { 'X-User-ID': userId }
         });
-        
-        async function loadProfile() {
-            try {
-                const response = await fetch('/api/profile', {
-                    headers: { 'X-User-Id': currentUserId }
-                });
-                
-                const result = await response.json();
-                
-                if (result.success) {
-                    renderProfile(result.profile);
-                }
-            } catch (error) {
-                console.error('Error:', error);
-            }
+        const data = await response.json();
+
+        if (data.success) {
+          renderProfile(data.profile);
         }
-        
-        function renderProfile(profile) {
-            document.getElementById('user-id').textContent = profile.userId;
-            document.getElementById('join-date').textContent = new Date(profile.joinedAt).toLocaleDateString('fr-FR');
-            
-            document.getElementById('stat-confidences').textContent = profile.confidences;
-            document.getElementById('stat-reactions').textContent = profile.reactions;
-            document.getElementById('stat-responses').textContent = profile.responses;
-            
-            loadMyConfidences();
-        }
-        
-        async function loadMyConfidences() {
-            try {
-                const response = await fetch('/api/confidences?chapter=all');
-                const result = await response.json();
-                
-                if (result.success) {
-                    const myConfidences = result.data.filter(c => c.user_id === currentUserId);
-                    renderMyConfidences(myConfidences);
-                }
-            } catch (error) {
-                console.error('Error:', error);
-            }
-        }
-        
-        function renderMyConfidences(confidences) {
-            const container = document.getElementById('my-confidences-list');
-            
-            if (confidences.length === 0) {
-                container.innerHTML = '<p class="text-center text-gray-500 py-8">Vous n\'avez pas encore publié de confidence.</p>';
-                return;
-            }
-            
-            const html = confidences.map(conf => `
-                <div class="border rounded-xl p-4 hover:bg-gray-50 transition">
-                    <p class="text-gray-800 mb-2">${escapeHtml(conf.content.substring(0, 150))}${conf.content.length > 150 ? '...' : ''}</p>
-                    <div class="flex items-center justify-between text-sm text-gray-500">
-                        <span>${new Date(conf.created_at).toLocaleDateString('fr-FR')}</span>
-                        <div class="space-x-2">
-                            <span>💬 ${conf.responses?.length || 0}</span>
-                            <span>💙 ${Object.values(conf.reactions).reduce((a,b) => a+b, 0)}</span>
-                            <a href="/confidence/${conf.id}" class="text-purple-600 hover:underline">Voir →</a>
-                        </div>
-                    </div>
-                </div>
-            `).join('');
-            
-            container.innerHTML = html;
-        }
-        
-        function escapeHtml(text) {
-            const div = document.createElement('div');
-            div.textContent = text;
-            return div.innerHTML;
-        }
-    </script>
-    
+      } catch (error) {
+        console.error('Error loading profile:', error);
+      }
+    }
+
+    function renderProfile(profile) {
+      document.getElementById('member-status').textContent = profile.premium 
+        ? t('profile.member_premium', lang) 
+        : t('profile.member_free', lang);
+
+      document.getElementById('stat-confidences').textContent = profile.stats.confidencesCount;
+      document.getElementById('stat-reactions').textContent = profile.stats.reactionsReceived;
+      document.getElementById('stat-responses').textContent = profile.stats.responsesReceived;
+      document.getElementById('stat-helped').textContent = profile.stats.peopleHelped;
+
+      if (!profile.premium) {
+        document.getElementById('stat-limit').textContent = `(${t('profile.confidences_limit', lang)} 20)`;
+        document.getElementById('premium-section').classList.remove('hidden');
+      }
+
+      const container = document.getElementById('confidences-container');
+      
+      if (profile.confidences.length === 0) {
+        container.innerHTML = `<p class="text-center text-gray-500 py-8">${t('profile.no_confidences', lang)}</p>`;
+        return;
+      }
+
+      container.innerHTML = profile.confidences.map(conf => `
+        <div class="border-b border-purple-600/20 py-4 last:border-0">
+          <div class="flex items-center gap-2 mb-2">
+            <i data-lucide="message-circle" class="w-4 h-4 text-purple-400"></i>
+            <span class="text-sm text-purple-400">${t('emotions.' + conf.emotion, lang)}</span>
+          </div>
+          <p class="mb-2 line-clamp-2">${conf.content}</p>
+          <div class="flex gap-4 text-sm text-gray-400">
+            <span>${conf.reaction_count} ${t('feed.reactions', lang)}</span>
+            <span>${conf.response_count} ${t('feed.comments', lang)}</span>
+            <button onclick="location.href='/confidence.html?id=${conf.id}'" class="ml-auto text-purple-400 hover:text-purple-300">${t('profile.view', lang)}</button>
+          </div>
+        </div>
+      `).join('');
+
+      lucide.createIcons();
+    }
+
+    loadProfile();
+    lucide.createIcons();
+  </script>
 </body>
 </html>
