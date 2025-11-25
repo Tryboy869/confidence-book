@@ -1,33 +1,21 @@
+# Logs
+logs/
+*.log
+
+# Environment
+.env
+
 # Dependencies
 node_modules/
 
-# Environment variables
-.env
-
-# Database (local)
-*.db
-*.db-shm
-*.db-wal
-local.db
-
-# Logs
-*.log
-npm-debug.log*
-logs/
-
-# OS
+# System
 .DS_Store
 Thumbs.db
 
 # IDE
 .vscode/
 .idea/
-*.swp
-*.swo
 
 # Build
 dist/
 build/
-
-# Ancien fichier (ne plus utiliser)
-app.html
