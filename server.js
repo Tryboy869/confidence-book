@@ -1,7 +1,8 @@
 import { createClient } from '@libsql/client';
 import dotenv from 'dotenv';
 import crypto from 'crypto';
-
+const service = new BackendService();
+service.init();
 dotenv.config();
 
 const GROQ_MODELS = [
@@ -271,21 +272,39 @@ Réponds UNIQUEMENT avec un JSON :
       };
     }
 
-    const confId = this.generateId('conf');
-    const now = Date.now();
-    const expiresAt = isPremium ? now + (100 * 365 * 24 * 60 * 60 * 1000) : now + (90 * 24 * 60 * 60 * 1000);
+   app.post('/api/users/create', async (req, res) => {
+    try {
+        const { secretPhrase } = req.body;
+        if (!secretPhrase) {
+            return res.status(400).json({ success: false, message: "Phrase secrète manquante" });
+        }
 
-    await this.db.execute({
-      sql: 'INSERT INTO confidences (id, user_id, content, emotion, moderation_score, moderation_message, needs_review, created_at, expires_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)',
-      args: [confId, userId, data.content, data.emotion, 1.0, moderation.reason, moderation.warning ? 0 : 0, now, expiresAt]
-    });
+        const result = await service.createUser(secretPhrase);
+        res.json(result); // Renvoie l'ID généré (ex: CB_a1b2c3d4)
+    } catch (error) {
+        console.error(error);
+        res.status(500).json({ success: false, message: "Erreur lors de la création" });
+    }
+});
 
-    return {
-      success: true,
-      confidenceId: confId,
-      warning: moderation.warning
-    };
-  }
+app.post('/api/users/verify', async (req, res) => {
+    try {
+        const { input } = req.body; // L'ID ou la phrase secrète tapée par l'utilisateur
+        if (!input) {
+            return res.status(400).json({ success: false, message: "Entrée manquante" });
+        }
+
+        const result = await service.verifyUser(input);
+        if (result.success) {
+            res.json(result);
+        } else {
+            res.status(401).json(result);
+        }
+    } catch (error) {
+        console.error(error);
+        res.status(500).json({ success: false, message: "Erreur de vérification" });
+    }
+});
 
   async getConfidences(chapter, userId) {
     let sql = `
