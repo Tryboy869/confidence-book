@@ -21,7 +21,7 @@ const db = createClient({
 // Initialisation simplifiée
 async function init() {
     await db.execute("CREATE TABLE IF NOT EXISTS users (id TEXT PRIMARY KEY, hash TEXT, created_at INTEGER)");
-    console.log("✅ Base de données prête");
+    console.log("Base de données prête");
 }
 
 app.post('/api/users/create', async (req, res) => {
@@ -47,6 +47,6 @@ app.get('/', (req, res) => {
 
 init().then(() => {
     app.listen(port, () => {
-        console.log(`🚀 SERVEUR LANCÉ SUR LE PORT ${port}`);
+        console.log(`SERVEUR LANCÉ SUR LE PORT ${port}`);
     });
 });
