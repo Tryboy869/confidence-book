@@ -14,8 +14,9 @@ const port = 3000;
 app.use(express.json());
 app.use(express.static(__dirname));
 
-const db = createClient({
-    url: process.env.DATABASE_URL || "file:local.db"
+const client = createClient({
+  url: process.env.DATABASE_URL,
+  authToken: process.env.DATABASE_AUTH_TOKEN, // Vérifie que ce nom est EXACTEMENT le même que sur Render
 });
 
 // Initialisation simplifiée
