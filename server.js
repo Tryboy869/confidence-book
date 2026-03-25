@@ -14,32 +14,36 @@ const port = 3000;
 app.use(express.json());
 app.use(express.static(__dirname));
 
-const client = createClient({
-  url: process.env.DATABASE_URL,
-  authToken: process.env.DATABASE_AUTH_TOKEN, // Vérifie que ce nom est EXACTEMENT le même que sur Render
+const db = createClient({
+  url: process.env.DATABASE_URL, // Cherche l'URL libsql:// sur Render
+  authToken: process.env.DATABASE_AUTH_TOKEN, // Cherche le Token sur Render
 });
 
-async function init() {
+// 2. Fonction d'initialisation automatique
+async function initDB() {
   try {
-    // C'est ici que l'erreur arrivait (ligne 24)
-    // Si tu as écrit 'client.execute' au lieu de 'db.execute', ça plante !
+    // Si tu as mis RESET_DB=true sur Render, on nettoie tout
     if (process.env.RESET_DB === 'true') {
-      console.log("🔄 Réinitialisation de la base de données...");
-      await client.execute("DROP TABLE IF EXISTS users;"); 
+      console.log("⚠️ RESET_DB est à true : Nettoyage de la base...");
+      await db.execute("DROP TABLE IF EXISTS users;");
     }
-    
-    await client.execute(`
+
+    // Création de la table si elle n'existe pas (Indispensable pour Turso vide)
+    await db.execute(`
       CREATE TABLE IF NOT EXISTS users (
         id TEXT PRIMARY KEY,
-        username TEXT,
-        password TEXT
+        username TEXT NOT NULL,
+        password TEXT NOT NULL,
+        created_at DATETIME DEFAULT CURRENT_TIMESTAMP
       );
     `);
-    console.log("✅ Base de données prête");
+    
+    console.log("✅ Connexion Turso établie et tables prêtes !");
   } catch (error) {
-    console.error("❌ Erreur init:", error);
+    console.error("❌ Erreur lors de l'initialisation de la base :", error);
   }
 }
+initDB();
 
 app.post('/api/users/create', async (req, res) => {
     try {
