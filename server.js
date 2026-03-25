@@ -19,10 +19,26 @@ const client = createClient({
   authToken: process.env.DATABASE_AUTH_TOKEN, // Vérifie que ce nom est EXACTEMENT le même que sur Render
 });
 
-// Initialisation simplifiée
 async function init() {
-    await db.execute("CREATE TABLE IF NOT EXISTS users (id TEXT PRIMARY KEY, hash TEXT, created_at INTEGER)");
-    console.log("Base de données prête");
+  try {
+    // C'est ici que l'erreur arrivait (ligne 24)
+    // Si tu as écrit 'client.execute' au lieu de 'db.execute', ça plante !
+    if (process.env.RESET_DB === 'true') {
+      console.log("🔄 Réinitialisation de la base de données...");
+      await client.execute("DROP TABLE IF EXISTS users;"); 
+    }
+    
+    await client.execute(`
+      CREATE TABLE IF NOT EXISTS users (
+        id TEXT PRIMARY KEY,
+        username TEXT,
+        password TEXT
+      );
+    `);
+    console.log("✅ Base de données prête");
+  } catch (error) {
+    console.error("❌ Erreur init:", error);
+  }
 }
 
 app.post('/api/users/create', async (req, res) => {
