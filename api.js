@@ -1,7 +1,6 @@
 import express from 'express';
 import path from 'path';
 import { fileURLToPath } from 'url';
-import fs from 'fs';
 import { BackendService } from './server.js';
 
 const __filename = fileURLToPath(import.meta.url);
@@ -13,499 +12,274 @@ const PORT = process.env.PORT || 3000;
 app.use(express.json({ limit: '10mb' }));
 app.use(express.static(__dirname));
 
+// ─── Security Logger (in-memory, Render compatible) ──────────────────────────
 class SecurityLogger {
   constructor() {
     this.logs = [];
-    this.maxLogsInMemory = 1000;
+    this.maxLogs = 1000;
     this.rateLimits = new Map();
     this.blockedIPs = new Set();
-    
-    if (!fs.existsSync('logs')) {
-      fs.mkdirSync('logs');
-    }
   }
-  
+
   log(level, type, data) {
-    const entry = {
-      timestamp: new Date().toISOString(),
-      level,
-      type,
-      ...data
-    };
-    
+    const entry = { timestamp: new Date().toISOString(), level, type, ...data };
     this.logs.push(entry);
-    if (this.logs.length > this.maxLogsInMemory) {
-      this.logs.shift();
-    }
-    
-    console.log(`[${level}] [${type}] ${JSON.stringify(data)}`);
-    this.writeToFile(level, entry);
-  }
-  
-  writeToFile(level, entry) {
-    const date = new Date().toISOString().split('T')[0];
-    const logLine = `[${entry.timestamp}] [${entry.level}] [${entry.type}] ${JSON.stringify(entry)}\n`;
-    
-    fs.appendFileSync(`logs/api-${date}.log`, logLine);
-    
-    if (level === 'SECURITY') {
-      fs.appendFileSync(`logs/security-${date}.log`, logLine);
-    }
-    
-    if (level === 'ERROR') {
-      fs.appendFileSync(`logs/errors-${date}.log`, logLine);
+    if (this.logs.length > this.maxLogs) this.logs.shift();
+    if (level === 'ERROR' || level === 'SECURITY') {
+      console.error(`[${level}] [${type}]`, JSON.stringify(data));
+    } else if (level !== 'INFO') {
+      console.log(`[${level}] [${type}]`, JSON.stringify(data));
     }
   }
-  
+
   info(type, data) { this.log('INFO', type, data); }
   warn(type, data) { this.log('WARN', type, data); }
   error(type, data) { this.log('ERROR', type, data); }
   security(type, data) { this.log('SECURITY', type, data); }
-  
+
   checkRateLimit(identifier, limit = 100, windowMs = 15 * 60 * 1000) {
     const now = Date.now();
-    
-    if (!this.rateLimits.has(identifier)) {
-      this.rateLimits.set(identifier, []);
-    }
-    
-    const requests = this.rateLimits.get(identifier);
-    const validRequests = requests.filter(time => now - time < windowMs);
-    
-    if (validRequests.length >= limit) {
-      this.security('RATE_LIMIT_EXCEEDED', {
-        identifier,
-        requests: validRequests.length,
-        limit
-      });
+    if (!this.rateLimits.has(identifier)) this.rateLimits.set(identifier, []);
+    const requests = this.rateLimits.get(identifier).filter(t => now - t < windowMs);
+    if (requests.length >= limit) {
+      this.security('RATE_LIMIT', { identifier, requests: requests.length, limit });
       return false;
     }
-    
-    validRequests.push(now);
-    this.rateLimits.set(identifier, validRequests);
-    
-    if (validRequests.length >= limit * 0.8) {
-      this.warn('RATE_LIMIT_WARNING', {
-        identifier,
-        requests: validRequests.length,
-        limit
-      });
-    }
-    
+    requests.push(now);
+    this.rateLimits.set(identifier, requests);
     return true;
   }
-  
+
   detectSQLInjection(input) {
-    const sqlPatterns = [
-      /(\b(SELECT|INSERT|UPDATE|DELETE|DROP|CREATE|ALTER|EXEC|UNION)\b)/i,
-      /(--|\#|\/\*|\*\/)/,
-      /(\bOR\b.*=.*\bOR\b)/i,
-      /('|"|;|\)|\()/
-    ];
-    
-    for (const pattern of sqlPatterns) {
-      if (pattern.test(input)) return true;
-    }
-    return false;
+    return /(\b(SELECT|INSERT|UPDATE|DELETE|DROP|CREATE|EXEC|UNION)\b|--|#|\/\*)/i.test(input);
   }
-  
+
   detectXSS(input) {
-    const xssPatterns = [
-      /<script\b[^<]*(?:(?!<\/script>)<[^<]*)*<\/script>/gi,
-      /javascript:/gi,
-      /on\w+\s*=\s*["'][^"']*["']/gi,
-      /<iframe/gi
-    ];
-    
-    for (const pattern of xssPatterns) {
-      if (pattern.test(input)) return true;
-    }
-    return false;
+    return /<script|javascript:|on\w+\s*=|<iframe/gi.test(input);
   }
-  
+
   validateRequest(req) {
     const ip = req.ip || req.connection.remoteAddress;
-    
-    if (this.blockedIPs.has(ip)) {
-      this.security('BLOCKED_IP_ATTEMPT', { ip, endpoint: req.path });
-      return { valid: false, reason: 'IP blocked' };
-    }
-    
-    if (!this.checkRateLimit(ip, 100, 15 * 60 * 1000)) {
-      return { valid: false, reason: 'Rate limit exceeded' };
-    }
-    
-    if (req.body && JSON.stringify(req.body).length > 10 * 1024 * 1024) {
-      this.warn('LARGE_PAYLOAD', { ip, size: JSON.stringify(req.body).length });
-      return { valid: false, reason: 'Payload too large' };
-    }
-    
-    const checkObject = (obj) => {
-      for (const [key, value] of Object.entries(obj)) {
-        if (typeof value === 'string') {
-          if (this.detectSQLInjection(value)) {
-            this.security('SQL_INJECTION_ATTEMPT', { ip, field: key, value: value.substring(0, 100) });
-            return false;
+    if (this.blockedIPs.has(ip)) return { valid: false, reason: 'IP blocked' };
+    if (!this.checkRateLimit(ip)) return { valid: false, reason: 'Rate limit exceeded' };
+
+    if (req.body) {
+      const body = JSON.stringify(req.body);
+      if (body.length > 10 * 1024 * 1024) return { valid: false, reason: 'Payload too large' };
+      const check = (obj) => {
+        for (const [k, v] of Object.entries(obj)) {
+          if (typeof v === 'string') {
+            if (this.detectSQLInjection(v)) { this.security('SQL_INJECTION', { ip, field: k }); return false; }
+            if (this.detectXSS(v)) { this.security('XSS_ATTEMPT', { ip, field: k }); return false; }
+          } else if (typeof v === 'object' && v !== null) {
+            if (!check(v)) return false;
           }
-          if (this.detectXSS(value)) {
-            this.security('XSS_ATTEMPT', { ip, field: key, value: value.substring(0, 100) });
-            return false;
-          }
-        } else if (typeof value === 'object' && value !== null) {
-          if (!checkObject(value)) return false;
         }
-      }
-      return true;
-    };
-    
-    if (req.body && !checkObject(req.body)) {
-      return { valid: false, reason: 'Malicious content detected' };
+        return true;
+      };
+      if (!check(req.body)) return { valid: false, reason: 'Malicious content' };
     }
-    
     return { valid: true };
   }
-  
-  blockIP(ip, reason, durationMs = 24 * 60 * 60 * 1000) {
+
+  blockIP(ip, reason) {
     this.blockedIPs.add(ip);
-    this.security('IP_BLOCKED', { ip, reason, duration: durationMs });
-    
-    setTimeout(() => {
-      this.blockedIPs.delete(ip);
-      this.info('IP_UNBLOCKED', { ip });
-    }, durationMs);
+    this.security('IP_BLOCKED', { ip, reason });
+    setTimeout(() => this.blockedIPs.delete(ip), 24 * 60 * 60 * 1000);
   }
-  
+
   getStats() {
-    const last24h = Date.now() - 24 * 60 * 60 * 1000;
-    const recentLogs = this.logs.filter(l => new Date(l.timestamp) > last24h);
-    
+    const last24h = Date.now() - 86400000;
+    const recent = this.logs.filter(l => new Date(l.timestamp) > last24h);
     return {
-      total: recentLogs.length,
-      byLevel: {
-        INFO: recentLogs.filter(l => l.level === 'INFO').length,
-        WARN: recentLogs.filter(l => l.level === 'WARN').length,
-        ERROR: recentLogs.filter(l => l.level === 'ERROR').length,
-        SECURITY: recentLogs.filter(l => l.level === 'SECURITY').length
-      },
-      byType: recentLogs.reduce((acc, log) => {
-        acc[log.type] = (acc[log.type] || 0) + 1;
-        return acc;
-      }, {}),
-      blockedIPs: Array.from(this.blockedIPs),
-      topIPs: [...this.rateLimits.entries()]
-        .map(([ip, requests]) => ({ ip, requests: requests.length }))
-        .sort((a, b) => b.requests - a.requests)
-        .slice(0, 10)
+      total: recent.length,
+      byLevel: { INFO: recent.filter(l => l.level === 'INFO').length, WARN: recent.filter(l => l.level === 'WARN').length, ERROR: recent.filter(l => l.level === 'ERROR').length, SECURITY: recent.filter(l => l.level === 'SECURITY').length },
+      blockedIPs: Array.from(this.blockedIPs)
     };
   }
-  
-  getRecentLogs(limit = 100) {
-    return this.logs.slice(-limit).reverse();
-  }
+
+  getRecentLogs(limit = 200) { return this.logs.slice(-limit).reverse(); }
 }
 
-const securityLogger = new SecurityLogger();
+const logger = new SecurityLogger();
 
+// Middleware sécurité
 app.use((req, res, next) => {
-  const startTime = Date.now();
   const ip = req.ip || req.connection.remoteAddress;
   const userId = req.headers['x-user-id'] || 'anonymous';
-  
-  const validation = securityLogger.validateRequest(req);
-  
+  const validation = logger.validateRequest(req);
+
   if (!validation.valid) {
-    securityLogger.security('REQUEST_BLOCKED', {
-      ip,
-      userId,
-      method: req.method,
-      endpoint: req.path,
-      reason: validation.reason
-    });
-    
-    return res.status(403).json({
-      success: false,
-      message: 'Request blocked for security reasons'
-    });
+    logger.security('REQUEST_BLOCKED', { ip, userId, method: req.method, path: req.path, reason: validation.reason });
+    return res.status(403).json({ success: false, message: 'Request blocked' });
   }
-  
-  securityLogger.info('API_REQUEST', {
-    ip,
-    userId,
-    method: req.method,
-    endpoint: req.path,
-    userAgent: req.headers['user-agent']
-  });
-  
-  const originalSend = res.send;
-  res.send = function(data) {
-    const duration = Date.now() - startTime;
-    
-    securityLogger.info('API_RESPONSE', {
-      ip,
-      userId,
-      method: req.method,
-      endpoint: req.path,
-      statusCode: res.statusCode,
-      duration
-    });
-    
-    originalSend.call(this, data);
-  };
-  
   next();
 });
 
 let backend;
 
 async function initBackend() {
-  securityLogger.info('SYSTEM', { message: 'Initializing backend service...' });
   try {
     backend = new BackendService();
     await backend.init();
-    securityLogger.info('SYSTEM', { message: 'Backend service ready' });
-    
-    setInterval(() => {
-      backend.cleanExpiredConfidences();
-    }, 24 * 60 * 60 * 1000);
-  } catch (error) {
-    securityLogger.error('SYSTEM', { message: 'Backend init failed', error: error.message });
-    throw error;
+    console.log('✅ Backend ready');
+    setInterval(() => backend.cleanExpiredConfidences(), 24 * 60 * 60 * 1000);
+  } catch (err) {
+    console.error('❌ Backend init failed:', err);
+    throw err;
   }
 }
 
-app.get('/', (req, res) => {
-  res.sendFile(path.join(__dirname, 'welcome.html'));
-});
+// ─── Routes statiques ────────────────────────────────────────────────────────
+app.get('/', (req, res) => res.sendFile(path.join(__dirname, 'welcome.html')));
 
+// ─── Auth ────────────────────────────────────────────────────────────────────
 app.post('/api/auth/create', async (req, res) => {
-  try {
-    const result = await backend.createUser(req.body.secretPhrase);
-    res.json(result);
-  } catch (error) {
-    securityLogger.error('API_ERROR', { endpoint: '/api/auth/create', error: error.message });
-    res.status(500).json({ success: false, message: error.message });
-  }
+  try { res.json(await backend.createUser(req.body.secretPhrase)); }
+  catch (e) { res.status(500).json({ success: false, message: e.message }); }
 });
 
 app.post('/api/auth/verify', async (req, res) => {
-  try {
-    const result = await backend.verifyUser(req.body.input);
-    res.json(result);
-  } catch (error) {
-    securityLogger.error('API_ERROR', { endpoint: '/api/auth/verify', error: error.message });
-    res.status(500).json({ success: false, message: error.message });
-  }
+  try { res.json(await backend.verifyUser(req.body.input)); }
+  catch (e) { res.status(500).json({ success: false, message: e.message }); }
 });
 
+// ─── Confidences ─────────────────────────────────────────────────────────────
 app.get('/api/confidences', async (req, res) => {
   try {
-    const result = await backend.getConfidences(req.query.chapter, req.headers['x-user-id']);
-    res.json(result);
-  } catch (error) {
-    securityLogger.error('API_ERROR', { endpoint: '/api/confidences', error: error.message });
-    res.status(500).json({ success: false, message: error.message });
-  }
+    const page = parseInt(req.query.page) || 1;
+    const pageSize = parseInt(req.query.pageSize) || 20;
+    res.json(await backend.getConfidences(req.query.chapter, req.headers['x-user-id'], page, pageSize));
+  } catch (e) { res.status(500).json({ success: false, message: e.message }); }
 });
 
 app.get('/api/confidences/:id', async (req, res) => {
-  try {
-    const result = await backend.getConfidence(req.params.id, req.headers['x-user-id']);
-    res.json(result);
-  } catch (error) {
-    securityLogger.error('API_ERROR', { endpoint: '/api/confidences/:id', error: error.message });
-    res.status(500).json({ success: false, message: error.message });
-  }
+  try { res.json(await backend.getConfidence(req.params.id, req.headers['x-user-id'])); }
+  catch (e) { res.status(500).json({ success: false, message: e.message }); }
 });
 
 app.post('/api/confidences', async (req, res) => {
-  try {
-    const result = await backend.createConfidence(req.body, req.headers);
-    res.json(result);
-  } catch (error) {
-    securityLogger.error('API_ERROR', { endpoint: '/api/confidences', error: error.message });
-    res.status(500).json({ success: false, message: error.message });
-  }
+  try { res.json(await backend.createConfidence(req.body, req.headers)); }
+  catch (e) { res.status(500).json({ success: false, message: e.message }); }
 });
 
 app.put('/api/confidences/:id', async (req, res) => {
-  try {
-    const result = await backend.updateConfidence(req.params.id, req.body, req.headers);
-    res.json(result);
-  } catch (error) {
-    securityLogger.error('API_ERROR', { endpoint: '/api/confidences/:id', error: error.message });
-    res.status(500).json({ success: false, message: error.message });
-  }
+  try { res.json(await backend.updateConfidence(req.params.id, req.body, req.headers)); }
+  catch (e) { res.status(500).json({ success: false, message: e.message }); }
 });
 
 app.delete('/api/confidences/:id', async (req, res) => {
-  try {
-    const result = await backend.deleteConfidence(req.params.id, req.headers);
-    res.json(result);
-  } catch (error) {
-    securityLogger.error('API_ERROR', { endpoint: '/api/confidences/:id', error: error.message });
-    res.status(500).json({ success: false, message: error.message });
-  }
+  try { res.json(await backend.deleteConfidence(req.params.id, req.headers)); }
+  catch (e) { res.status(500).json({ success: false, message: e.message }); }
 });
 
+// ─── Reactions & Responses ───────────────────────────────────────────────────
 app.post('/api/reactions', async (req, res) => {
-  try {
-    const result = await backend.toggleReaction(req.body, req.headers);
-    res.json(result);
-  } catch (error) {
-    securityLogger.error('API_ERROR', { endpoint: '/api/reactions', error: error.message });
-    res.status(500).json({ success: false, message: error.message });
-  }
-});
-
-app.post('/api/responses', async (req, res) => {
-  try {
-    const result = await backend.createResponse(req.body, req.headers);
-    res.json(result);
-  } catch (error) {
-    securityLogger.error('API_ERROR', { endpoint: '/api/responses', error: error.message });
-    res.status(500).json({ success: false, message: error.message });
-  }
+  try { res.json(await backend.toggleReaction(req.body, req.headers)); }
+  catch (e) { res.status(500).json({ success: false, message: e.message }); }
 });
 
 app.post('/api/response-reactions', async (req, res) => {
-  try {
-    const result = await backend.toggleResponseReaction(req.body, req.headers);
-    res.json(result);
-  } catch (error) {
-    securityLogger.error('API_ERROR', { endpoint: '/api/response-reactions', error: error.message });
-    res.status(500).json({ success: false, message: error.message });
-  }
+  try { res.json(await backend.toggleResponseReaction(req.body, req.headers)); }
+  catch (e) { res.status(500).json({ success: false, message: e.message }); }
 });
 
+app.post('/api/responses', async (req, res) => {
+  try { res.json(await backend.createResponse(req.body, req.headers)); }
+  catch (e) { res.status(500).json({ success: false, message: e.message }); }
+});
+
+// ─── Profile & Settings ──────────────────────────────────────────────────────
 app.get('/api/profile', async (req, res) => {
-  try {
-    const result = await backend.getProfile(req.headers);
-    res.json(result);
-  } catch (error) {
-    securityLogger.error('API_ERROR', { endpoint: '/api/profile', error: error.message });
-    res.status(500).json({ success: false, message: error.message });
-  }
+  try { res.json(await backend.getProfile(req.headers)); }
+  catch (e) { res.status(500).json({ success: false, message: e.message }); }
 });
 
 app.put('/api/settings', async (req, res) => {
-  try {
-    const result = await backend.updateSettings(req.body, req.headers);
-    res.json(result);
-  } catch (error) {
-    securityLogger.error('API_ERROR', { endpoint: '/api/settings', error: error.message });
-    res.status(500).json({ success: false, message: error.message });
-  }
+  try { res.json(await backend.updateSettings(req.body, req.headers)); }
+  catch (e) { res.status(500).json({ success: false, message: e.message }); }
 });
 
 app.delete('/api/account', async (req, res) => {
+  try { res.json(await backend.deleteAccount(req.headers)); }
+  catch (e) { res.status(500).json({ success: false, message: e.message }); }
+});
+
+// ─── Admin ───────────────────────────────────────────────────────────────────
+function adminAuth(req, res, next) {
+  if (req.headers['x-admin-key'] !== process.env.ADMIN_KEY) {
+    logger.security('UNAUTHORIZED_ADMIN', { ip: req.ip, path: req.path });
+    return res.status(403).json({ success: false, message: 'Unauthorized' });
+  }
+  next();
+}
+
+app.get('/api/admin/stats', adminAuth, async (req, res) => {
+  try { res.json(await backend.getAdminStats()); }
+  catch (e) { res.status(500).json({ success: false, message: e.message }); }
+});
+
+app.get('/api/admin/users', adminAuth, async (req, res) => {
+  try { res.json(await backend.getPremiumRequests()); }
+  catch (e) { res.status(500).json({ success: false, message: e.message }); }
+});
+
+// Activer le premium manuellement depuis le dashboard admin
+app.post('/api/admin/premium/activate', adminAuth, async (req, res) => {
   try {
-    const result = await backend.deleteAccount(req.headers);
-    res.json(result);
-  } catch (error) {
-    securityLogger.error('API_ERROR', { endpoint: '/api/account', error: error.message });
-    res.status(500).json({ success: false, message: error.message });
-  }
+    const { userId, type } = req.body; // type: 'monthly' | 'yearly'
+    if (!userId || !type) return res.status(400).json({ success: false, message: 'userId and type required' });
+    res.json(await backend.activatePremium(userId, type, req.headers));
+  } catch (e) { res.status(500).json({ success: false, message: e.message }); }
 });
 
-app.get('/api/health', async (req, res) => {
+app.post('/api/admin/premium/deactivate', adminAuth, async (req, res) => {
   try {
-    const result = await backend.healthCheck();
-    res.json(result);
-  } catch (error) {
-    securityLogger.error('API_ERROR', { endpoint: '/api/health', error: error.message });
-    res.status(500).json({ success: false, message: error.message });
-  }
+    const { userId } = req.body;
+    if (!userId) return res.status(400).json({ success: false, message: 'userId required' });
+    res.json(await backend.deactivatePremium(userId, req.headers));
+  } catch (e) { res.status(500).json({ success: false, message: e.message }); }
 });
 
-app.get('/api/admin/logs', (req, res) => {
-  const adminKey = req.headers['x-admin-key'];
-  
-  if (adminKey !== process.env.ADMIN_KEY) {
-    securityLogger.security('UNAUTHORIZED_ADMIN_ACCESS', {
-      ip: req.ip,
-      endpoint: '/api/admin/logs'
-    });
-    return res.status(403).json({ success: false, message: 'Unauthorized' });
-  }
-  
-  const logs = securityLogger.getRecentLogs(500);
-  res.json({ success: true, logs });
+app.get('/api/admin/logs', adminAuth, (req, res) => {
+  res.json({ success: true, logs: logger.getRecentLogs(200) });
 });
 
-app.get('/api/admin/stats', (req, res) => {
-  const adminKey = req.headers['x-admin-key'];
-  
-  if (adminKey !== process.env.ADMIN_KEY) {
-    securityLogger.security('UNAUTHORIZED_ADMIN_ACCESS', {
-      ip: req.ip,
-      endpoint: '/api/admin/stats'
-    });
-    return res.status(403).json({ success: false, message: 'Unauthorized' });
-  }
-  
-  const stats = securityLogger.getStats();
-  res.json({ success: true, stats });
-});
-
-app.post('/api/admin/block-ip', (req, res) => {
-  const adminKey = req.headers['x-admin-key'];
-  
-  if (adminKey !== process.env.ADMIN_KEY) {
-    return res.status(403).json({ success: false, message: 'Unauthorized' });
-  }
-  
+app.post('/api/admin/block-ip', adminAuth, (req, res) => {
   const { ip, reason } = req.body;
-  securityLogger.blockIP(ip, reason);
+  logger.blockIP(ip, reason);
   res.json({ success: true, message: `IP ${ip} blocked` });
 });
 
+// ─── Health ──────────────────────────────────────────────────────────────────
+app.get('/api/health', async (req, res) => {
+  try { res.json(await backend.healthCheck()); }
+  catch (e) { res.status(500).json({ success: false, status: 'unhealthy' }); }
+});
+
+// ─── Error handlers ──────────────────────────────────────────────────────────
 app.use((err, req, res, next) => {
-  securityLogger.error('UNHANDLED_ERROR', {
-    error: err.message,
-    stack: err.stack,
-    endpoint: req.path
-  });
+  logger.error('UNHANDLED_ERROR', { error: err.message, path: req.path });
   res.status(500).json({ success: false, message: 'Internal server error' });
 });
 
 app.use((req, res) => {
-  securityLogger.warn('404_NOT_FOUND', {
-    method: req.method,
-    path: req.path,
-    ip: req.ip
-  });
   res.status(404).json({ success: false, message: 'Route not found' });
 });
 
 async function startServer() {
   await initBackend();
-  
   app.listen(PORT, '0.0.0.0', () => {
-    securityLogger.info('SYSTEM', {
-      message: 'Server started',
-      port: PORT,
-      environment: process.env.NODE_ENV || 'development'
-    });
-    
     console.log(`
-===============================================================
-   CONFIDENCE BOOK - Secure API Gateway
-   Server:     http://0.0.0.0:${PORT}
-   Security:   Active (Rate Limit, Validation)
-   Logging:    logs/* (security, api, errors)
-===============================================================
-    `);
+=============================================================
+  CONFIDENCE BOOK API — port ${PORT}
+  Logs : console (Render compatible)
+  Admin : POST /api/admin/premium/activate
+=============================================================`);
   });
 }
 
-process.on('SIGTERM', () => {
-  securityLogger.info('SYSTEM', { message: 'SIGTERM received, shutting down gracefully' });
-  process.exit(0);
-});
-
-process.on('SIGINT', () => {
-  securityLogger.info('SYSTEM', { message: 'SIGINT received, shutting down gracefully' });
-  process.exit(0);
-});
+process.on('SIGTERM', () => { console.log('SIGTERM received'); process.exit(0); });
+process.on('SIGINT', () => { console.log('SIGINT received'); process.exit(0); });
 
 startServer();
