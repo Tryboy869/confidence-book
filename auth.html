@@ -3,149 +3,277 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>💜</text></svg>">
-  <title>Authentication - Confidence Book</title>
+  <title>Connexion — Confidence Book</title>
   <script src="https://cdn.tailwindcss.com"></script>
   <script src="https://unpkg.com/lucide@latest"></script>
   <script src="/assets/translations.js"></script>
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
   <style>
-    body { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); min-height: 100vh; }
-    ::-webkit-scrollbar { width: 8px; }
-    ::-webkit-scrollbar-track { background: #f1f1f1; }
-    ::-webkit-scrollbar-thumb { background: #d1d5db; border-radius: 4px; }
+    * { font-family: 'DM Sans', sans-serif; box-sizing: border-box; }
+    body { background: #0f0e17; color: #fffffe; min-height: 100vh; }
+
+    .card { background: #1a1825; border: 1px solid #2d2a3e; border-radius: 20px; }
+    .input-field {
+      width: 100%; padding: 14px 16px;
+      background: #0f0e17; border: 2px solid #2d2a3e;
+      border-radius: 12px; color: #fffffe; font-size: 1rem;
+      transition: border-color 0.2s; outline: none;
+    }
+    .input-field:focus { border-color: #a78bfa; }
+    .btn-primary {
+      width: 100%; padding: 14px;
+      background: linear-gradient(135deg, #7c3aed, #a78bfa);
+      color: white; font-weight: 600; font-size: 1rem;
+      border-radius: 12px; border: none; cursor: pointer;
+      transition: opacity 0.2s; letter-spacing: 0.01em;
+    }
+    .btn-primary:hover { opacity: 0.9; }
+    .btn-primary:disabled { opacity: 0.5; cursor: not-allowed; }
+    .btn-secondary {
+      width: 100%; padding: 14px;
+      background: transparent; border: 2px solid #2d2a3e;
+      color: #a78bfa; font-weight: 600; font-size: 1rem;
+      border-radius: 12px; cursor: pointer; transition: all 0.2s;
+    }
+    .btn-secondary:hover { border-color: #a78bfa; background: #a78bfa10; }
+
+    .tab-btn { padding: 10px 24px; border-radius: 10px; font-weight: 600; cursor: pointer; transition: all 0.2s; border: none; }
+    .tab-active { background: #7c3aed; color: white; }
+    .tab-inactive { background: transparent; color: #6b7280; }
+    .tab-inactive:hover { color: #a78bfa; }
+
+    /* Étape sauvegarde ID */
+    .id-display {
+      font-family: 'Courier New', monospace;
+      background: #0f0e17; border: 2px solid #7c3aed;
+      border-radius: 12px; padding: 16px 20px;
+      font-size: 1.3rem; font-weight: 700;
+      letter-spacing: 0.1em; color: #a78bfa;
+      text-align: center;
+    }
+    .copy-btn {
+      padding: 10px 20px; background: #7c3aed;
+      color: white; border: none; border-radius: 10px;
+      cursor: pointer; font-weight: 600; transition: all 0.2s;
+      display: flex; align-items: center; gap: 8px;
+    }
+    .copy-btn:hover { background: #6d28d9; }
+    .copy-btn.copied { background: #10b981; }
+
+    .warning-box {
+      background: #fbbf2415; border: 1px solid #fbbf2450;
+      border-radius: 12px; padding: 16px;
+    }
+    .confirm-check {
+      width: 20px; height: 20px; accent-color: #7c3aed; cursor: pointer;
+    }
+
+    .divider {
+      display: flex; align-items: center; gap: 12px; color: #4b5563;
+      font-size: 0.85rem;
+    }
+    .divider::before, .divider::after {
+      content: ''; flex: 1; height: 1px; background: #2d2a3e;
+    }
+
+    .fade-in { animation: fadeIn 0.3s ease; }
+    @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
   </style>
 </head>
-<body class="p-6">
-  <div class="max-w-2xl mx-auto">
-    <div class="bg-white rounded-3xl shadow-2xl p-8">
-      <h1 class="text-3xl font-bold text-gray-800 text-center mb-8" id="page-title"></h1>
+<body class="flex items-center justify-center min-h-screen p-4">
 
-      <div class="mb-8">
-        <h2 class="text-xl font-bold text-gray-800 mb-3" id="create-title"></h2>
-        <p class="text-gray-600 mb-4" id="create-subtitle"></p>
-        <input type="text" id="secret-phrase" placeholder="" class="w-full px-4 py-3 border-2 border-gray-300 rounded-lg focus:border-purple-600 focus:outline-none mb-2">
-        <p class="text-sm text-gray-500 mb-4" id="phrase-help"></p>
-        <button onclick="createAccount()" class="w-full bg-gradient-to-r from-purple-600 to-indigo-600 text-white font-semibold py-3 px-6 rounded-xl shadow-lg hover:shadow-xl transition" id="create-btn"></button>
-      </div>
+  <!-- Étape 1 : Formulaire (create / login) -->
+  <div id="step-form" class="w-full max-w-md fade-in">
+    <div class="text-center mb-8">
+      <a href="/welcome.html" class="text-purple-400 hover:text-purple-300 text-sm mb-4 inline-block">← Retour</a>
+      <div class="text-4xl mb-3">💜</div>
+      <h1 class="text-2xl font-bold">Ton espace anonyme</h1>
+      <p class="text-gray-400 text-sm mt-1">Aucune donnée personnelle requise</p>
+    </div>
 
-      <div class="text-center text-gray-500 mb-8">OR</div>
+    <!-- Tabs -->
+    <div class="flex gap-2 mb-6 p-1 card">
+      <button onclick="showTab('create')" id="tab-create" class="tab-btn tab-active flex-1">Créer mon espace</button>
+      <button onclick="showTab('login')" id="tab-login" class="tab-btn tab-inactive flex-1">J'ai déjà un espace</button>
+    </div>
 
-      <div>
-        <h2 class="text-xl font-bold text-gray-800 mb-3" id="login-title"></h2>
-        <p class="text-gray-600 mb-4" id="login-subtitle"></p>
-        <input type="text" id="login-input" placeholder="" class="w-full px-4 py-3 border-2 border-gray-300 rounded-lg focus:border-purple-600 focus:outline-none mb-4">
-        <button onclick="login()" class="w-full border-2 border-purple-600 text-purple-600 font-semibold py-3 px-6 rounded-xl hover:bg-purple-50 transition" id="login-btn"></button>
-      </div>
+    <!-- Create -->
+    <div id="panel-create" class="card p-6 fade-in">
+      <p class="text-gray-400 text-sm mb-5">Choisis une phrase secrète mémorable. Elle te permettra de te reconnecter depuis n'importe où.</p>
+      <input type="text" id="secret-phrase" class="input-field mb-2" placeholder="Ex : Mon chat s'appelle Felix">
+      <p class="text-gray-500 text-xs mb-5">Minimum 8 caractères. Ne pas utiliser ton vrai nom.</p>
+      <button onclick="createAccount()" id="create-btn" class="btn-primary">Créer mon espace anonyme</button>
+    </div>
+
+    <!-- Login -->
+    <div id="panel-login" class="card p-6 fade-in hidden">
+      <p class="text-gray-400 text-sm mb-5">Entre ton ID anonyme (CB_xxxxxxxx) ou ta phrase secrète.</p>
+      <input type="text" id="login-input" class="input-field mb-5" placeholder="CB_xxxxxxxx ou ta phrase secrète">
+      <button onclick="login()" id="login-btn" class="btn-primary">Se connecter</button>
     </div>
   </div>
 
-  <div id="success-modal" class="hidden fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center p-4 z-50">
-    <div class="bg-white rounded-2xl w-full max-w-md shadow-2xl p-6">
-      <h2 class="text-2xl font-bold text-center mb-4" id="success-title"></h2>
-      <div class="bg-purple-50 rounded-lg p-4 mb-4">
-        <p class="text-sm text-gray-600 mb-2" id="success-id-label"></p>
-        <div class="flex items-center gap-2 mb-3">
-          <code class="flex-1 bg-white px-3 py-2 rounded font-mono text-sm" id="generated-id"></code>
-          <button onclick="copyId()" class="p-2 bg-purple-600 text-white rounded hover:bg-purple-700 transition">
-            <i data-lucide="copy" class="w-4 h-4"></i>
-          </button>
-        </div>
-        <p class="text-sm text-gray-600 mb-2" id="success-phrase-label"></p>
-        <code class="block bg-white px-3 py-2 rounded font-mono text-sm mb-3" id="generated-phrase"></code>
-        <p class="text-xs text-gray-600" id="success-warning"></p>
+  <!-- Étape 2 : Sauvegarde obligatoire de l'ID -->
+  <div id="step-save" class="w-full max-w-md fade-in hidden">
+    <div class="card p-6">
+      <div class="text-center mb-6">
+        <div class="text-4xl mb-3">🔐</div>
+        <h2 class="text-xl font-bold mb-1">Sauvegarde ton ID !</h2>
+        <p class="text-gray-400 text-sm">Sans lui, tu ne pourras <strong class="text-yellow-400">jamais</strong> récupérer ton espace.</p>
       </div>
-      <button onclick="continueToApp()" class="w-full bg-gradient-to-r from-purple-600 to-indigo-600 text-white font-semibold py-3 rounded-xl" id="continue-btn"></button>
+
+      <!-- ID display -->
+      <div class="id-display mb-3" id="display-id">CB_xxxxxxxx</div>
+
+      <div class="flex gap-2 mb-5">
+        <button onclick="copyId()" id="copy-id-btn" class="copy-btn flex-1 justify-center">
+          <i data-lucide="copy" class="w-4 h-4"></i>
+          <span id="copy-id-text">Copier l'ID</span>
+        </button>
+        <button onclick="downloadId()" class="copy-btn" style="background:#1e40af" title="Télécharger en .txt">
+          <i data-lucide="download" class="w-4 h-4"></i>
+        </button>
+      </div>
+
+      <div class="divider mb-5">ta phrase secrète</div>
+
+      <div class="card p-4 mb-5" style="border-color:#4b5563">
+        <p class="text-xs text-gray-400 mb-1">Phrase secrète enregistrée</p>
+        <p class="font-mono text-sm" id="display-phrase">—</p>
+      </div>
+
+      <!-- Warning box -->
+      <div class="warning-box mb-5">
+        <p class="text-yellow-400 font-semibold text-sm mb-2">⚠️ Important à lire</p>
+        <ul class="text-gray-300 text-sm space-y-1">
+          <li>• Ton ID est <strong>unique et non récupérable</strong></li>
+          <li>• Si tu perds ton ID ET ta phrase, ton espace est <strong>perdu définitivement</strong></li>
+          <li>• Copie-le dans tes notes, screenshots ou un gestionnaire de mots de passe</li>
+        </ul>
+      </div>
+
+      <!-- Confirmation obligatoire -->
+      <label class="flex items-start gap-3 cursor-pointer mb-5">
+        <input type="checkbox" id="confirm-saved" class="confirm-check mt-0.5">
+        <span class="text-sm text-gray-300">J'ai sauvegardé mon ID ou ma phrase secrète. Je comprends que sans eux, mon espace est inaccessible.</span>
+      </label>
+
+      <button onclick="continueToApp()" id="continue-btn" class="btn-primary" disabled>
+        Accéder à mon espace →
+      </button>
     </div>
   </div>
 
   <script>
     const lang = getCurrentLanguage();
-    document.getElementById('page-title').textContent = t('auth.title', lang);
-    document.getElementById('create-title').textContent = t('auth.create_title', lang);
-    document.getElementById('create-subtitle').textContent = t('auth.create_subtitle', lang);
-    document.getElementById('secret-phrase').placeholder = t('auth.phrase_placeholder', lang);
-    document.getElementById('phrase-help').textContent = t('auth.phrase_help', lang);
-    document.getElementById('create-btn').textContent = t('auth.create_button', lang);
-    document.getElementById('login-title').textContent = t('auth.login_title', lang);
-    document.getElementById('login-subtitle').textContent = t('auth.login_subtitle', lang);
-    document.getElementById('login-input').placeholder = t('auth.input_placeholder', lang);
-    document.getElementById('login-btn').textContent = t('auth.login_button', lang);
-
     let generatedUserId = '';
     let userPhrase = '';
 
+    // Tabs
+    function showTab(tab) {
+      document.getElementById('panel-create').classList.toggle('hidden', tab !== 'create');
+      document.getElementById('panel-login').classList.toggle('hidden', tab !== 'login');
+      document.getElementById('tab-create').className = `tab-btn flex-1 ${tab === 'create' ? 'tab-active' : 'tab-inactive'}`;
+      document.getElementById('tab-login').className = `tab-btn flex-1 ${tab === 'login' ? 'tab-active' : 'tab-inactive'}`;
+    }
+
+    // Activer le bouton continuer uniquement si cochée
+    document.addEventListener('change', (e) => {
+      if (e.target.id === 'confirm-saved') {
+        document.getElementById('continue-btn').disabled = !e.target.checked;
+      }
+    });
+
     async function createAccount() {
       const phrase = document.getElementById('secret-phrase').value.trim();
-      
-      if (phrase.length < 8) {
-        alert(t('auth.error_short', lang));
-        return;
-      }
+      if (phrase.length < 8) { alert('La phrase doit contenir au moins 8 caractères.'); return; }
+
+      const btn = document.getElementById('create-btn');
+      btn.disabled = true;
+      btn.textContent = 'Création...';
 
       try {
-        const response = await fetch('/api/auth/create', {
+        const res = await fetch('/api/auth/create', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ secretPhrase: phrase })
         });
-
-        const data = await response.json();
+        const data = await res.json();
 
         if (data.success) {
           generatedUserId = data.userId;
           userPhrase = phrase;
-          document.getElementById('generated-id').textContent = data.userId;
-          document.getElementById('generated-phrase').textContent = phrase;
-          
-          document.getElementById('success-title').textContent = t('auth.success_title', lang);
-          document.getElementById('success-id-label').textContent = t('auth.success_id', lang);
-          document.getElementById('success-phrase-label').textContent = t('auth.success_phrase', lang);
-          document.getElementById('success-warning').textContent = t('auth.success_warning', lang);
-          document.getElementById('continue-btn').textContent = t('auth.understood', lang);
-          
-          document.getElementById('success-modal').classList.remove('hidden');
-          lucide.createIcons();
+          showSaveStep();
         } else {
-          alert(data.message || t('common.error', lang));
+          alert(data.message || 'Erreur lors de la création');
         }
-      } catch (error) {
-        console.error('Create account error:', error);
-        alert(t('common.error', lang));
+      } catch (e) {
+        alert('Erreur de connexion. Réessaie.');
+      } finally {
+        btn.disabled = false;
+        btn.textContent = 'Créer mon espace anonyme';
       }
     }
 
     async function login() {
       const input = document.getElementById('login-input').value.trim();
-      
       if (!input) return;
 
+      const btn = document.getElementById('login-btn');
+      btn.disabled = true;
+      btn.textContent = 'Connexion...';
+
       try {
-        const response = await fetch('/api/auth/verify', {
+        const res = await fetch('/api/auth/verify', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ input })
         });
-
-        const data = await response.json();
+        const data = await res.json();
 
         if (data.success) {
           localStorage.setItem('confidenceBookUserID', data.userId);
           location.href = '/feed.html';
         } else {
-          alert(t('auth.error_invalid', lang));
+          alert('ID ou phrase secrète invalide. Vérifie bien ta saisie.');
         }
-      } catch (error) {
-        console.error('Login error:', error);
-        alert(t('common.error', lang));
+      } catch (e) {
+        alert('Erreur de connexion. Réessaie.');
+      } finally {
+        btn.disabled = false;
+        btn.textContent = 'Se connecter';
       }
     }
 
+    function showSaveStep() {
+      document.getElementById('step-form').classList.add('hidden');
+      document.getElementById('step-save').classList.remove('hidden');
+      document.getElementById('display-id').textContent = generatedUserId;
+      document.getElementById('display-phrase').textContent = userPhrase;
+      lucide.createIcons();
+    }
+
     function copyId() {
-      navigator.clipboard.writeText(generatedUserId);
-      alert(t('common.copied', lang));
+      navigator.clipboard.writeText(generatedUserId).then(() => {
+        const btn = document.getElementById('copy-id-btn');
+        const txt = document.getElementById('copy-id-text');
+        btn.classList.add('copied');
+        txt.textContent = 'Copié !';
+        setTimeout(() => { btn.classList.remove('copied'); txt.textContent = "Copier l'ID"; }, 2000);
+      });
+    }
+
+    function downloadId() {
+      const content = `CONFIDENCE BOOK — Mon espace anonyme\n\nID : ${generatedUserId}\nPhrase secrète : ${userPhrase}\n\n⚠️ Garde ce fichier en lieu sûr. Sans cet ID ou cette phrase, ton espace est inaccessible.\n\nSite : ${window.location.origin}`;
+      const blob = new Blob([content], { type: 'text/plain' });
+      const a = document.createElement('a');
+      a.href = URL.createObjectURL(blob);
+      a.download = 'confidence-book-mon-id.txt';
+      a.click();
     }
 
     function continueToApp() {
+      if (!document.getElementById('confirm-saved').checked) return;
       localStorage.setItem('confidenceBookUserID', generatedUserId);
       location.href = '/feed.html';
     }
