@@ -1,287 +1,393 @@
 <!DOCTYPE html>
 <html lang="fr">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Confidence - Confidence Book</title>
-    
-    <script src="https://cdn.tailwindcss.com"></script>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
-    
-    <style>
-        body { font-family: 'Inter', sans-serif; }
-        ::-webkit-scrollbar { width: 8px; }
-        ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 4px; }
-        
-        .theme-calm {
-            --theme-bg: #f8f9fa;
-            --theme-surface: #ffffff;
-            --theme-primary: #3b82f6;
-            --theme-text-primary: #1f2937;
-            --theme-text-secondary: #6b7280;
-            --theme-border: #e5e7eb;
-        }
-        
-        .dark .theme-calm {
-            --theme-bg: #111827;
-            --theme-surface: #1f2937;
-            --theme-primary: #60a5fa;
-            --theme-text-primary: #f9fafb;
-            --theme-text-secondary: #9ca3af;
-            --theme-border: #374151;
-        }
-        
-        body { background-color: var(--theme-bg); color: var(--theme-text-primary); }
-        .bg-surface { background-color: var(--theme-surface); }
-        .text-secondary { color: var(--theme-text-secondary); }
-        .border-theme { border-color: var(--theme-border); }
-        .shadow-calm { box-shadow: 0 4px 12px 0 rgba(0, 0, 0, 0.05); }
-    </style>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Confidence — Confidence Book</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://unpkg.com/lucide@latest"></script>
+  <script src="/assets/translations.js"></script>
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <style>
+    * { font-family: 'DM Sans', sans-serif; box-sizing: border-box; }
+    body { background: #0f0e17; color: #fffffe; min-height: 100vh; }
+
+    .card { background: #1a1825; border: 1px solid #2d2a3e; border-radius: 20px; }
+    .input-field {
+      width: 100%; background: #0f0e17; border: 2px solid #2d2a3e;
+      border-radius: 12px; color: #fffffe; padding: 14px 16px;
+      font-size: 0.95rem; resize: none; outline: none;
+      transition: border-color 0.2s; line-height: 1.6;
+    }
+    .input-field:focus { border-color: #7c3aed; }
+    .btn-primary {
+      background: linear-gradient(135deg, #7c3aed, #a78bfa);
+      color: white; font-weight: 600; border: none;
+      border-radius: 12px; cursor: pointer; transition: opacity 0.2s;
+      padding: 12px 24px; font-size: 0.95rem;
+    }
+    .btn-primary:hover { opacity: 0.9; }
+    .btn-primary:disabled { opacity: 0.5; cursor: not-allowed; }
+
+    .app-header {
+      background: #1a182590; backdrop-filter: blur(12px);
+      border-bottom: 1px solid #2d2a3e;
+      position: sticky; top: 0; z-index: 30;
+    }
+
+    .badge {
+      display: inline-flex; align-items: center; gap: 5px;
+      padding: 4px 12px; border-radius: 999px;
+      font-size: 0.78rem; font-weight: 600;
+    }
+
+    .react-btn {
+      display: inline-flex; align-items: center; gap: 6px;
+      padding: 7px 14px; border-radius: 999px;
+      border: 1px solid #2d2a3e; background: transparent;
+      font-size: 0.82rem; cursor: pointer; transition: all 0.2s; color: #9ca3af;
+    }
+    .react-btn:hover { border-color: #7c3aed; color: #a78bfa; background: #7c3aed10; }
+    .react-btn.active { border-color: #7c3aed; color: #a78bfa; background: #7c3aed20; }
+
+    .comment-card { background: #13111f; border: 1px solid #2d2a3e; border-radius: 16px; padding: 16px; }
+
+    .avatar-bubble {
+      width: 38px; height: 38px; border-radius: 50%;
+      background: #7c3aed20; border: 1px solid #7c3aed30;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 1.1rem; flex-shrink: 0;
+    }
+
+    .modal-overlay {
+      position: fixed; inset: 0; background: #00000085;
+      backdrop-filter: blur(4px); z-index: 50;
+      display: flex; align-items: flex-end; justify-content: center; padding: 16px;
+    }
+    @media(min-width:640px) { .modal-overlay { align-items: center; } }
+    .modal-box {
+      background: #1a1825; border: 1px solid #2d2a3e;
+      border-radius: 24px; width: 100%; max-width: 480px;
+    }
+    .reaction-option {
+      display: flex; align-items: center; gap: 10px;
+      padding: 13px 16px; border-radius: 14px;
+      border: 1px solid #2d2a3e; background: transparent;
+      cursor: pointer; transition: all 0.2s; color: #fffffe; width: 100%;
+    }
+    .reaction-option:hover { background: #7c3aed15; border-color: #7c3aed; }
+
+    .spinner {
+      width: 18px; height: 18px; border: 2px solid #a78bfa40;
+      border-top-color: #a78bfa; border-radius: 50%;
+      animation: spin 0.8s linear infinite; display: inline-block;
+    }
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    .limit-banner { background: #fbbf2415; border: 1px solid #fbbf2440; border-radius: 12px; padding: 12px 16px; }
+
+    .fade-in { animation: fadeIn 0.3s ease; }
+    @keyframes fadeIn { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; } }
+
+    ::-webkit-scrollbar { width: 6px; }
+    ::-webkit-scrollbar-thumb { background: #3d3a4e; border-radius: 3px; }
+  </style>
 </head>
+<body>
 
-<body class="theme-calm min-h-screen">
+  <!-- Header -->
+  <header class="app-header">
+    <div class="max-w-2xl mx-auto px-4 py-4 flex items-center justify-between">
+      <button onclick="location.href='/feed.html'" class="flex items-center gap-2 text-purple-400 hover:text-purple-300 transition font-medium">
+        <i data-lucide="arrow-left" class="w-5 h-5"></i>
+        Retour
+      </button>
+      <span class="text-sm font-semibold text-gray-400">Confidence Book</span>
+      <div class="w-20"></div>
+    </div>
+  </header>
 
-    <!-- Header -->
-    <header class="bg-surface shadow-calm sticky top-0 z-20 border-b border-theme">
-        <div class="container mx-auto max-w-4xl px-4 py-4 flex items-center justify-between">
-            <a href="/app.html" class="flex items-center space-x-2 text-primary hover:opacity-80">
-                <svg class="w-6 h-6" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
-                    <path stroke-linecap="round" stroke-linejoin="round" d="M10.5 19.5L3 12m0 0l7.5-7.5M3 12h18" />
-                </svg>
-                <span class="font-medium">Retour</span>
-            </a>
-            
-            <h1 class="text-lg font-semibold">Confidence</h1>
-            
-            <div class="w-20"></div>
-        </div>
-    </header>
+  <div class="max-w-2xl mx-auto px-4 py-6 space-y-5">
 
-    <!-- Container -->
-    <div class="container mx-auto max-w-4xl px-4 py-8">
-        
-        <!-- Confidence Principale -->
-        <div id="main-confidence" class="mb-8">
-            <div class="text-center py-12">
-                <p class="text-secondary">Chargement...</p>
-            </div>
-        </div>
-
-        <!-- Section Commentaires -->
-        <div class="bg-surface rounded-2xl shadow-calm p-6">
-            <h2 class="text-xl font-semibold mb-6">💬 Commentaires</h2>
-            
-            <!-- Form nouveau commentaire -->
-            <div class="flex space-x-3 mb-6 pb-6 border-b border-theme">
-                <div class="w-10 h-10 rounded-full bg-blue-100 dark:bg-blue-800 flex items-center justify-center flex-shrink-0">
-                    <svg class="w-6 h-6 text-blue-600" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
-                        <path stroke-linecap="round" stroke-linejoin="round" d="M15.75 6a3.75 3.75 0 11-7.5 0 3.75 3.75 0 017.5 0zM4.501 20.118a7.5 7.5 0 0114.998 0A17.933 17.933 0 0112 21.75c-2.676 0-5.216-.584-7.499-1.632z" />
-                    </svg>
-                </div>
-                <div class="flex-1">
-                    <textarea id="comment-input" rows="3" class="w-full p-3 rounded-lg border border-theme bg-surface focus:outline-none focus:ring-2 focus:ring-primary" placeholder="Répondre avec bienveillance..."></textarea>
-                    <button onclick="submitComment()" class="mt-3 bg-primary text-white px-6 py-2 rounded-lg font-medium hover:opacity-90 transition">
-                        Envoyer
-                    </button>
-                </div>
-            </div>
-            
-            <!-- Liste commentaires -->
-            <div id="comments-list" class="space-y-4">
-                <!-- Rempli dynamiquement -->
-            </div>
-        </div>
-
+    <!-- Confidence principale -->
+    <div id="main-confidence" class="fade-in">
+      <div class="card p-8 text-center text-gray-500">
+        <div class="spinner mx-auto mb-3"></div>
+        <p class="text-sm">Chargement...</p>
+      </div>
     </div>
 
-    <!-- Footer -->
-    <footer class="bg-surface border-t border-theme mt-12 py-6">
-        <div class="container mx-auto max-w-4xl px-4 text-center text-sm text-secondary space-y-2">
-            <p>📧 <a href="mailto:nexusstudio100@gmail.com" class="hover:text-primary">Support</a> | 
-               💬 <a href="https://wa.me/22969056283" target="_blank" class="hover:text-primary">WhatsApp</a> | 
-               💙 <a href="https://wa.me/22969056283" target="_blank" class="hover:text-primary">Faire un don</a></p>
-            <p class="text-xs">🌍 Aide internationale : <a href="tel:3114" class="text-red-600">3114 (FR)</a> | <a href="tel:1833456456" class="text-red-600">1-833-456-4566 (CA)</a></p>
-        </div>
-    </footer>
+    <!-- Limite commentaires -->
+    <div id="comment-limit-banner" class="limit-banner hidden">
+      <p class="text-yellow-400 text-sm font-semibold" id="comment-limit-msg"></p>
+    </div>
 
-    <!-- JAVASCRIPT -->
-    <script>
-        const currentUserId = localStorage.getItem('confidence_user_id');
-        const urlParams = new URLSearchParams(window.location.search);
-        const confId = urlParams.get('id');
-        
-        if (!currentUserId) window.location.href = '/';
-        if (!confId) window.location.href = '/app.html';
-        
-        const CHAPTERS = [
-            { id: 'ruptures', emoji: '💔', name: 'Ruptures', color: 'red' },
-            { id: 'isolement', emoji: '😔', name: 'Isolement', color: 'blue' },
-            { id: 'traumas', emoji: '🔥', name: 'Traumas', color: 'orange' },
-            { id: 'stress', emoji: '🧠', name: 'Stress', color: 'purple' },
-            { id: 'spiritualite', emoji: '🪞', name: 'Spiritualité', color: 'indigo' },
-            { id: 'espoir', emoji: '🤝', name: 'Espoir', color: 'teal' }
-        ];
+    <!-- Zone commentaire -->
+    <div class="card p-5">
+      <h2 class="font-semibold mb-4 flex items-center gap-2">
+        <i data-lucide="message-circle" class="w-5 h-5 text-purple-400"></i>
+        Répondre avec bienveillance
+      </h2>
+      <textarea id="comment-input" class="input-field mb-3" rows="3"
+        placeholder="Écris quelque chose de bienveillant..."></textarea>
+      <div class="flex items-center justify-between">
+        <span class="text-xs text-gray-500" id="comments-left-label"></span>
+        <button onclick="submitComment()" id="send-btn" class="btn-primary">
+          Envoyer
+        </button>
+      </div>
+    </div>
 
-        const REACTIONS = [
-            { id: 'soutien', emoji: '🤝', color: 'blue' },
-            { id: 'espoir', emoji: '🔥', color: 'orange' },
-            { id: 'compatis', emoji: '🤜🤛', color: 'purple' },
-            { id: 'pas_seul', emoji: '🫂', color: 'green' },
-            { id: 'courage', emoji: '🙌', color: 'yellow' },
-            { id: 'triste', emoji: '💔', color: 'red' }
-        ];
+    <!-- Liste commentaires -->
+    <div id="comments-list" class="space-y-3 fade-in"></div>
 
-        document.addEventListener('DOMContentLoaded', loadPost);
+  </div>
 
-        async function loadPost() {
-            try {
-                const response = await fetch(`/api/confidences?chapter=all`);
-                const result = await response.json();
-                
-                if (result.success) {
-                    const conf = result.data.find(c => c.id === confId);
-                    if (conf) {
-                        renderMainConfidence(conf);
-                        renderComments(conf.responses || []);
-                    } else {
-                        window.location.href = '/app.html';
-                    }
-                }
-            } catch (error) {
-                console.error('Error:', error);
-            }
+  <!-- Footer -->
+  <footer class="border-t border-gray-800 mt-12 py-6">
+    <div class="max-w-2xl mx-auto px-4 text-center text-sm text-gray-500 space-y-1">
+      <p>
+        <a href="mailto:nexusstudio100@gmail.com" class="text-purple-400 hover:underline">Support</a> ·
+        <a href="https://wa.me/22969056283" target="_blank" class="text-purple-400 hover:underline">WhatsApp</a>
+      </p>
+      <p class="text-xs">🌍 Aide : <a href="tel:3114" class="text-red-400">3114 (FR)</a> · <a href="tel:18334564566" class="text-red-400">1-833-456-4566 (CA)</a></p>
+    </div>
+  </footer>
+
+  <!-- Reactions Modal -->
+  <div id="reactions-modal" class="modal-overlay hidden" onclick="handleModalBg(event)">
+    <div class="modal-box p-5">
+      <p class="text-sm text-gray-400 text-center mb-4">Comment tu te sens par rapport à cette confidence ?</p>
+      <div class="space-y-2">
+        <button onclick="react('soutiens')" class="reaction-option"><span class="text-xl">🤝</span><span class="font-medium">Je te soutiens</span></button>
+        <button onclick="react('espoir')" class="reaction-option"><span class="text-xl">🔥</span><span class="font-medium">Garde espoir</span></button>
+        <button onclick="react('compatis')" class="reaction-option"><span class="text-xl">💜</span><span class="font-medium">Je compatis</span></button>
+        <button onclick="react('pas_seul')" class="reaction-option"><span class="text-xl">🫂</span><span class="font-medium">T'es pas seul·e</span></button>
+        <button onclick="react('courage')" class="reaction-option"><span class="text-xl">🙌</span><span class="font-medium">Courage</span></button>
+        <button onclick="react('triste')" class="reaction-option"><span class="text-xl">💔</span><span class="font-medium">Triste</span></button>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    // CORRECTION 1 : bonne clé localStorage (même que auth.html et feed.html)
+    const currentUserId = localStorage.getItem('confidenceBookUserID');
+    const urlParams = new URLSearchParams(window.location.search);
+    const confId = urlParams.get('id');
+
+    // CORRECTION 2 : redirects vers les bonnes pages
+    if (!currentUserId) { window.location.href = '/auth.html'; }
+    if (!confId) { window.location.href = '/feed.html'; }
+
+    const CHAPTERS = {
+      ruptures:     { emoji: '💔', label: 'Ruptures',      color: '#ef4444' },
+      isolement:    { emoji: '😔', label: 'Isolement',     color: '#3b82f6' },
+      traumas:      { emoji: '🔥', label: 'Traumas',       color: '#f97316' },
+      stress:       { emoji: '🧠', label: 'Stress',        color: '#8b5cf6' },
+      spiritualite: { emoji: '🪞', label: 'Spiritualité',  color: '#6366f1' },
+      espoir:       { emoji: '🤝', label: 'Espoir',        color: '#10b981' }
+    };
+
+    const AVATARS_EMOJI = {
+      moon: '🌙', sun: '☀️', leaf: '🍃', flower: '🌸',
+      butterfly: '🦋', wave: '🌊', sparkles: '✨', star: '⭐'
+    };
+
+    let commentsLeft = 3;
+
+    document.addEventListener('DOMContentLoaded', loadPost);
+
+    async function loadPost() {
+      try {
+        // CORRECTION 3 : appel direct /api/confidences/:id au lieu de charger tout le feed
+        const response = await fetch(`/api/confidences/${confId}`, {
+          headers: { 'X-User-ID': currentUserId }
+        });
+        const result = await response.json();
+
+        if (result.success) {
+          renderMainConfidence(result.confidence);
+          renderComments(result.responses || []);
+        } else {
+          // CORRECTION 4 : redirect vers feed.html pas app.html
+          window.location.href = '/feed.html';
         }
+      } catch (error) {
+        console.error('Error loading post:', error);
+        document.getElementById('main-confidence').innerHTML =
+          `<div class="card p-8 text-center text-gray-500">Erreur de chargement. <button onclick="loadPost()" class="text-purple-400 underline">Réessayer</button></div>`;
+      }
+    }
 
-        function renderMainConfidence(conf) {
-            const chapter = CHAPTERS.find(ch => ch.id === conf.emotion) || CHAPTERS[0];
-            const isOwner = conf.user_id === currentUserId;
-            
-            document.getElementById('main-confidence').innerHTML = `
-                <article class="bg-surface rounded-2xl shadow-calm overflow-hidden">
-                    <div class="p-6 flex items-center justify-between border-b border-theme">
-                        <div class="flex items-center space-x-3">
-                            <div class="w-12 h-12 rounded-full bg-${chapter.color}-100 dark:bg-${chapter.color}-800 flex items-center justify-center">
-                                <span class="text-2xl">${chapter.emoji}</span>
-                            </div>
-                            <div>
-                                <p class="font-semibold text-${chapter.color}-600">${chapter.name}</p>
-                                <p class="text-xs text-secondary">${timeAgo(conf.created_at)}</p>
-                            </div>
-                        </div>
-                        ${isOwner ? `
-                            <div class="flex gap-2">
-                                <button onclick="deleteConfidence('${conf.id}')" class="text-red-500 hover:underline">🗑️ Supprimer</button>
-                            </div>
-                        ` : ''}
-                    </div>
-                    
-                    <div class="p-6">
-                        <p class="text-xl leading-relaxed">${escapeHtml(conf.content)}</p>
-                    </div>
-                    
-                    <div class="px-6 pb-6 flex flex-wrap gap-2">
-                        ${REACTIONS.map(r => `
-                            <button onclick="react('${conf.id}', '${r.id}')" class="text-sm border border-theme rounded-full py-2 px-4 hover:border-${r.color}-500 hover:bg-${r.color}-50 transition">
-                                ${r.emoji} ${conf.reactions?.[r.id] || 0}
-                            </button>
-                        `).join('')}
-                    </div>
-                </article>
-            `;
+    // Charge aussi les limites utilisateur
+    async function loadUserLimits() {
+      try {
+        const res = await fetch('/api/profile', { headers: { 'X-User-ID': currentUserId } });
+        const data = await res.json();
+        if (data.success && data.profile.limits) {
+          const limits = data.profile.limits;
+          commentsLeft = limits.commentsLeft;
+          const banner = document.getElementById('comment-limit-banner');
+          const label = document.getElementById('comments-left-label');
+          const input = document.getElementById('comment-input');
+          const btn = document.getElementById('send-btn');
+
+          if (!limits.canComment) {
+            banner.classList.remove('hidden');
+            document.getElementById('comment-limit-msg').textContent =
+              `Tu as atteint ta limite de ${limits.commentLimitPerDay} commentaires aujourd'hui. Reset à ${limits.nextCommentReset}.`;
+            input.disabled = true;
+            input.placeholder = 'Limite atteinte pour aujourd\'hui';
+            btn.disabled = true;
+          } else {
+            label.textContent = `${limits.commentsLeft} commentaire${limits.commentsLeft > 1 ? 's' : ''} restant aujourd'hui`;
+          }
         }
+      } catch (e) {}
+    }
 
-        function renderComments(comments) {
-            const container = document.getElementById('comments-list');
-            
-            if (comments.length === 0) {
-                container.innerHTML = '<p class="text-center text-secondary py-8">Aucun commentaire. Soyez le premier à répondre.</p>';
-                return;
-            }
-            
-            container.innerHTML = comments.map(comment => `
-                <div class="flex space-x-3">
-                    <div class="w-10 h-10 rounded-full bg-purple-100 dark:bg-purple-800 flex items-center justify-center flex-shrink-0">
-                        <span class="text-xl">${comment.avatar}</span>
-                    </div>
-                    <div class="flex-1 bg-gray-50 dark:bg-gray-800 rounded-xl p-4">
-                        <p class="text-secondary leading-relaxed">${escapeHtml(comment.content)}</p>
-                        <p class="text-xs text-secondary mt-2">${timeAgo(comment.created_at)}</p>
-                    </div>
-                </div>
-            `).join('');
+    function renderMainConfidence(conf) {
+      const ch = CHAPTERS[conf.emotion] || CHAPTERS.espoir;
+      const isOwner = conf.user_id === currentUserId;
+
+      document.getElementById('main-confidence').innerHTML = `
+        <article class="card overflow-hidden fade-in">
+          <div class="p-5 flex items-center justify-between" style="border-bottom:1px solid #2d2a3e">
+            <span class="badge" style="background:${ch.color}18;color:${ch.color}">${ch.emoji} ${ch.label}</span>
+            <div class="flex items-center gap-3">
+              <span class="text-xs text-gray-500">${timeAgo(conf.created_at)}</span>
+              ${isOwner ? `<button onclick="deleteConfidence('${conf.id}')" class="text-red-400 hover:text-red-300 text-xs transition">Supprimer</button>` : ''}
+            </div>
+          </div>
+          <div class="p-5">
+            <p class="leading-relaxed text-gray-200">${escapeHtml(conf.content)}</p>
+          </div>
+          <div class="px-5 pb-5 flex flex-wrap gap-2">
+            <button onclick="document.getElementById('reactions-modal').classList.remove('hidden')"
+              class="react-btn ${conf.user_reaction ? 'active' : ''}">
+              ${conf.user_reaction ? '✓ Réagi' : '+ Réagir'}
+              <span class="text-gray-500">· ${conf.reaction_count || 0}</span>
+            </button>
+            <span class="react-btn" style="cursor:default">
+              <i data-lucide="message-circle" class="w-3.5 h-3.5"></i>
+              ${conf.response_count || 0} réponse${conf.response_count > 1 ? 's' : ''}
+            </span>
+          </div>
+        </article>`;
+      lucide.createIcons();
+    }
+
+    function renderComments(comments) {
+      const container = document.getElementById('comments-list');
+
+      if (comments.length === 0) {
+        container.innerHTML = `
+          <div class="text-center py-10 text-gray-500">
+            <p class="text-3xl mb-2">💬</p>
+            <p class="text-sm">Aucune réponse. Sois le premier à apporter du soutien.</p>
+          </div>`;
+        return;
+      }
+
+      container.innerHTML = comments.map(c => `
+        <div class="comment-card flex gap-3 fade-in">
+          <div class="avatar-bubble">${AVATARS_EMOJI[c.avatar] || '🌟'}</div>
+          <div class="flex-1">
+            <p class="text-sm leading-relaxed text-gray-200">${escapeHtml(c.content)}</p>
+            <p class="text-xs text-gray-600 mt-2">${timeAgo(c.created_at)}</p>
+          </div>
+        </div>`).join('');
+    }
+
+    async function submitComment() {
+      const text = document.getElementById('comment-input').value.trim();
+      if (!text || text.length < 3) return;
+
+      const btn = document.getElementById('send-btn');
+      btn.innerHTML = '<span class="spinner"></span>';
+      btn.disabled = true;
+
+      try {
+        const res = await fetch('/api/responses', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            // CORRECTION 5 : header unifié X-User-ID
+            'X-User-ID': currentUserId
+          },
+          body: JSON.stringify({ confidenceId: confId, content: text })
+        });
+        const data = await res.json();
+
+        if (data.success) {
+          document.getElementById('comment-input').value = '';
+          await loadPost();
+          await loadUserLimits();
+        } else if (data.limitType === 'daily_comment') {
+          document.getElementById('comment-limit-banner').classList.remove('hidden');
+          document.getElementById('comment-limit-msg').textContent = data.message;
+          btn.disabled = true;
+          document.getElementById('comment-input').disabled = true;
+        } else if (data.limitType === 'moderation') {
+          alert(`Commentaire non publié : ${data.reason || 'Contenu non conforme.'}`);
+        } else {
+          alert(data.message || 'Erreur lors de l\'envoi.');
         }
+      } catch (e) {
+        alert('Erreur de connexion. Réessaie.');
+      } finally {
+        btn.innerHTML = 'Envoyer';
+        if (!document.getElementById('comment-input').disabled) btn.disabled = false;
+      }
+    }
 
-        async function submitComment() {
-            const text = document.getElementById('comment-input').value.trim();
-            if (!text) return;
-            
-            try {
-                const response = await fetch('/api/responses', {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                        'X-User-Id': currentUserId
-                    },
-                    body: JSON.stringify({ confidenceId: confId, content: text })
-                });
-                
-                const result = await response.json();
-                
-                if (result.success) {
-                    document.getElementById('comment-input').value = '';
-                    loadPost();
-                } else {
-                    alert(result.message || 'Erreur');
-                }
-            } catch (error) {
-                console.error('Error:', error);
-            }
-        }
+    async function react(type) {
+      document.getElementById('reactions-modal').classList.add('hidden');
+      try {
+        await fetch('/api/reactions', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', 'X-User-ID': currentUserId },
+          // CORRECTION 6 : 'type' pas 'reactionType'
+          body: JSON.stringify({ confidenceId: confId, type })
+        });
+        loadPost();
+      } catch (e) {}
+    }
 
-        async function react(confId, reactionId) {
-            try {
-                await fetch('/api/reactions', {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                        'X-User-Id': currentUserId
-                    },
-                    body: JSON.stringify({ confidenceId: confId, reactionType: reactionId })
-                });
-                loadPost();
-            } catch (error) {
-                console.error('Error:', error);
-            }
-        }
+    async function deleteConfidence(id) {
+      if (!confirm('Supprimer cette confidence ?')) return;
+      try {
+        await fetch(`/api/confidences/${id}`, {
+          method: 'DELETE',
+          headers: { 'X-User-ID': currentUserId }
+        });
+        window.location.href = '/feed.html';
+      } catch (e) {}
+    }
 
-        async function deleteConfidence(id) {
-            if (!confirm('Supprimer cette confidence ?')) return;
-            
-            try {
-                await fetch(`/api/confidences/${id}`, {
-                    method: 'DELETE',
-                    headers: { 'X-User-Id': currentUserId }
-                });
-                window.location.href = '/app.html';
-            } catch (error) {
-                console.error('Error:', error);
-            }
-        }
+    function handleModalBg(e) {
+      if (e.target.id === 'reactions-modal') {
+        document.getElementById('reactions-modal').classList.add('hidden');
+      }
+    }
 
-        function escapeHtml(text) {
-            const div = document.createElement('div');
-            div.textContent = text;
-            return div.innerHTML;
-        }
+    function escapeHtml(text) {
+      const d = document.createElement('div');
+      d.textContent = text;
+      return d.innerHTML;
+    }
 
-        function timeAgo(timestamp) {
-            const seconds = Math.floor((Date.now() - timestamp) / 1000);
-            if (seconds < 60) return 'À l\'instant';
-            if (seconds < 3600) return `Il y a ${Math.floor(seconds / 60)}min`;
-            if (seconds < 86400) return `Il y a ${Math.floor(seconds / 3600)}h`;
-            return `Il y a ${Math.floor(seconds / 86400)}j`;
-        }
-    </script>
+    function timeAgo(ts) {
+      const s = Math.floor((Date.now() - ts) / 1000);
+      if (s < 60) return "À l'instant";
+      if (s < 3600) return `${Math.floor(s / 60)}min`;
+      if (s < 86400) return `${Math.floor(s / 3600)}h`;
+      return `${Math.floor(s / 86400)}j`;
+    }
 
+    // Init
+    loadUserLimits();
+    lucide.createIcons();
+  </script>
 </body>
 </html>
