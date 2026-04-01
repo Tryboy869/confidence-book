@@ -272,7 +272,7 @@ JSON uniquement : {"approved":true/false,"reason":"court","warning":true/false}`
 
   async getConfidence(id, userId) {
     const result = await this.db.execute({
-      sql: `SELECT c., (SELECT COUNT(*) FROM reactions WHERE confidence_id = c.id) as reaction_count,
+      sql: `SELECT c.*, (SELECT COUNT(*) FROM reactions WHERE confidence_id = c.id) as reaction_count,
           (SELECT type FROM reactions WHERE confidence_id = c.id AND user_id = ?) as user_reaction
         FROM confidences c WHERE c.id = ?`,
       args: [userId || '', id]
