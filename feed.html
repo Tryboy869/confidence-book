@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="fr">
+<html lang="en">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -12,145 +12,65 @@
     * { font-family: 'DM Sans', sans-serif; box-sizing: border-box; }
     body { background: #0f0e17; color: #fffffe; min-height: 100vh; }
 
-    .card { background: #1a1825; border: 1px solid #2d2a3e; border-radius: 20px; }
-    .card-hover { transition: border-color 0.2s, transform 0.2s; }
-    .card-hover:hover { border-color: #7c3aed40; transform: translateY(-1px); }
+    .app-header { background: #1a182590; backdrop-filter: blur(12px); border-bottom: 1px solid #2d2a3e; position: sticky; top: 0; z-index: 30; }
 
-    .btn-primary {
-      background: linear-gradient(135deg, #7c3aed, #a78bfa);
-      color: white; font-weight: 600; border: none;
-      border-radius: 12px; cursor: pointer; transition: opacity 0.2s;
-    }
+    .filter-pill { padding: 7px 14px; border-radius: 999px; border: 1px solid #2d2a3e; background: transparent; color: #9ca3af; font-size: 0.82rem; font-weight: 500; cursor: pointer; white-space: nowrap; transition: all 0.2s; display: inline-flex; align-items: center; gap: 5px; }
+    .filter-pill:hover { border-color: #7c3aed; color: #a78bfa; }
+    .filter-pill.active { background: #7c3aed; border-color: #7c3aed; color: white; }
+    .filter-pill.subscribed { border-color: #7c3aed50; }
+    .sub-dot { width: 6px; height: 6px; border-radius: 50%; background: #a78bfa; }
+
+    .conf-card { background: #1a1825; border: 1px solid #2d2a3e; border-radius: 20px; overflow: hidden; transition: border-color 0.2s; }
+    .conf-card:hover { border-color: #7c3aed30; }
+
+    .badge { display: inline-flex; align-items: center; gap: 5px; padding: 4px 10px; border-radius: 999px; font-size: 0.75rem; font-weight: 600; }
+
+    .react-btn { display: inline-flex; align-items: center; gap: 5px; padding: 6px 12px; border-radius: 999px; border: 1px solid #2d2a3e; background: transparent; font-size: 0.8rem; cursor: pointer; transition: all 0.2s; color: #9ca3af; }
+    .react-btn:hover { border-color: #7c3aed; color: #a78bfa; }
+    .react-btn.active { border-color: #7c3aed; color: #a78bfa; background: #7c3aed15; }
+
+    .compose-area { background: #1a1825; border: 1px solid #2d2a3e; border-radius: 20px; padding: 16px; cursor: pointer; transition: border-color 0.2s; }
+    .compose-area:hover { border-color: #7c3aed50; }
+
+    /* Prompt card */
+    .prompt-card { background: linear-gradient(135deg, #1e1533, #1a1825); border: 1px solid #7c3aed40; border-radius: 20px; padding: 20px; }
+
+    /* Notification badge */
+    .notif-badge { position: absolute; top: -2px; right: -2px; width: 16px; height: 16px; background: #ef4444; border-radius: 50%; font-size: 0.6rem; font-weight: 700; display: flex; align-items: center; justify-content: center; border: 2px solid #0f0e17; }
+
+    /* Notification panel */
+    .notif-panel { position: absolute; top: calc(100% + 8px); right: 0; width: 320px; background: #1a1825; border: 1px solid #2d2a3e; border-radius: 16px; box-shadow: 0 20px 40px #00000060; z-index: 100; max-height: 400px; overflow-y: auto; }
+
+    /* Modal */
+    .modal-overlay { position: fixed; inset: 0; background: #00000080; backdrop-filter: blur(4px); z-index: 50; display: flex; align-items: flex-end; justify-content: center; padding: 16px; }
+    @media(min-width:640px) { .modal-overlay { align-items: center; } }
+    .modal-box { background: #1a1825; border: 1px solid #2d2a3e; border-radius: 24px; width: 100%; max-width: 600px; max-height: 90vh; overflow-y: auto; }
+
+    .textarea-field { width: 100%; background: #0f0e17; border: 2px solid #2d2a3e; border-radius: 12px; color: #fffffe; padding: 14px 16px; font-size: 1rem; resize: none; outline: none; transition: border-color 0.2s; line-height: 1.6; }
+    .textarea-field:focus { border-color: #7c3aed; }
+    .select-field { width: 100%; background: #0f0e17; border: 2px solid #2d2a3e; border-radius: 12px; color: #fffffe; padding: 12px 16px; outline: none; transition: border-color 0.2s; }
+    .select-field:focus { border-color: #7c3aed; }
+
+    .btn-primary { background: linear-gradient(135deg, #7c3aed, #a78bfa); color: white; font-weight: 600; border: none; border-radius: 12px; cursor: pointer; transition: opacity 0.2s; }
     .btn-primary:hover { opacity: 0.9; }
     .btn-primary:disabled { opacity: 0.5; cursor: not-allowed; }
 
-    /* Header */
-    .app-header {
-      background: #1a182590;
-      backdrop-filter: blur(12px);
-      border-bottom: 1px solid #2d2a3e;
-      position: sticky; top: 0; z-index: 30;
-    }
-
-    /* Filter pills */
-    .filter-pill {
-      padding: 8px 16px; border-radius: 999px;
-      border: 1px solid #2d2a3e; background: transparent;
-      color: #9ca3af; font-size: 0.85rem; font-weight: 500;
-      cursor: pointer; white-space: nowrap; transition: all 0.2s;
-    }
-    .filter-pill:hover { border-color: #7c3aed; color: #a78bfa; }
-    .filter-pill.active { background: #7c3aed; border-color: #7c3aed; color: white; }
-
-    /* Compose area */
-    .compose-area {
-      background: #1a1825; border: 1px solid #2d2a3e;
-      border-radius: 20px; padding: 16px;
-      cursor: pointer; transition: border-color 0.2s;
-    }
-    .compose-area:hover { border-color: #7c3aed50; }
-    .compose-area.disabled { opacity: 0.5; cursor: not-allowed; }
-
-    /* Confidence card */
-    .conf-card {
-      background: #1a1825; border: 1px solid #2d2a3e;
-      border-radius: 20px; overflow: hidden;
-      transition: border-color 0.2s;
-    }
-    .conf-card:hover { border-color: #7c3aed30; }
-
-    /* Chapter badge */
-    .badge {
-      display: inline-flex; align-items: center; gap: 5px;
-      padding: 4px 10px; border-radius: 999px;
-      font-size: 0.75rem; font-weight: 600;
-    }
-
-    /* Reaction buttons */
-    .react-btn {
-      display: inline-flex; align-items: center; gap: 5px;
-      padding: 6px 12px; border-radius: 999px;
-      border: 1px solid #2d2a3e; background: transparent;
-      font-size: 0.8rem; cursor: pointer; transition: all 0.2s;
-      color: #9ca3af;
-    }
-    .react-btn:hover { border-color: #7c3aed; color: #a78bfa; background: #7c3aed10; }
-    .react-btn.active { border-color: #7c3aed; color: #a78bfa; background: #7c3aed20; }
-
-    /* Modal */
-    .modal-overlay {
-      position: fixed; inset: 0; background: #00000080;
-      backdrop-filter: blur(4px); z-index: 50;
-      display: flex; align-items: flex-end; justify-content: center;
-      padding: 16px;
-    }
-    @media(min-width:640px) { .modal-overlay { align-items: center; } }
-    .modal-box {
-      background: #1a1825; border: 1px solid #2d2a3e;
-      border-radius: 24px; width: 100%; max-width: 600px;
-      max-height: 90vh; overflow-y: auto;
-    }
-
-    .textarea-field {
-      width: 100%; background: #0f0e17; border: 2px solid #2d2a3e;
-      border-radius: 12px; color: #fffffe; padding: 14px 16px;
-      font-size: 1rem; resize: none; outline: none;
-      transition: border-color 0.2s; line-height: 1.6;
-    }
-    .textarea-field:focus { border-color: #7c3aed; }
-
-    .select-field {
-      width: 100%; background: #0f0e17; border: 2px solid #2d2a3e;
-      border-radius: 12px; color: #fffffe; padding: 12px 16px;
-      font-size: 0.9rem; outline: none; transition: border-color 0.2s;
-    }
-    .select-field:focus { border-color: #7c3aed; }
-
-    /* Reactions modal */
-    .reactions-grid {
-      display: grid; grid-template-columns: 1fr 1fr; gap: 10px; padding: 16px;
-    }
-    .reaction-option {
-      display: flex; align-items: center; gap: 10px;
-      padding: 12px 16px; border-radius: 14px;
-      border: 1px solid #2d2a3e; background: transparent;
-      cursor: pointer; transition: all 0.2s; color: #fffffe;
-    }
+    .reaction-option { display: flex; align-items: center; gap: 10px; padding: 12px 16px; border-radius: 14px; border: 1px solid #2d2a3e; background: transparent; cursor: pointer; transition: all 0.2s; color: #fffffe; width: 100%; }
     .reaction-option:hover { background: #7c3aed15; border-color: #7c3aed; }
 
-    /* Limit banner */
-    .limit-banner {
-      background: #fbbf2415; border: 1px solid #fbbf2440;
-      border-radius: 12px; padding: 12px 16px;
-    }
+    .limit-banner { background: #fbbf2415; border: 1px solid #fbbf2440; border-radius: 12px; padding: 12px 16px; }
 
-    /* Loading skeleton */
-    .skeleton {
-      background: linear-gradient(90deg, #2d2a3e 25%, #3d3a4e 50%, #2d2a3e 75%);
-      background-size: 200% 100%;
-      animation: shimmer 1.5s infinite;
-      border-radius: 8px;
-    }
+    .skeleton { background: linear-gradient(90deg, #2d2a3e 25%, #3d3a4e 50%, #2d2a3e 75%); background-size: 200% 100%; animation: shimmer 1.5s infinite; border-radius: 8px; }
     @keyframes shimmer { 0% { background-position: 200% 0; } 100% { background-position: -200% 0; } }
 
-    /* Publishing state */
-    .publishing-overlay {
-      background: #7c3aed20; border: 2px solid #7c3aed;
-      border-radius: 12px; padding: 16px; text-align: center;
-    }
-
-    .spinner {
-      width: 20px; height: 20px; border: 2px solid #a78bfa40;
-      border-top-color: #a78bfa; border-radius: 50%;
-      animation: spin 0.8s linear infinite; display: inline-block;
-    }
+    .spinner { width: 18px; height: 18px; border: 2px solid #a78bfa40; border-top-color: #a78bfa; border-radius: 50%; animation: spin 0.8s linear infinite; display: inline-block; }
     @keyframes spin { to { transform: rotate(360deg); } }
-
-    ::-webkit-scrollbar { width: 6px; }
-    ::-webkit-scrollbar-thumb { background: #3d3a4e; border-radius: 3px; }
 
     .fade-in { animation: fadeIn 0.3s ease; }
     @keyframes fadeIn { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; } }
+
+    ::-webkit-scrollbar { width: 6px; }
+    ::-webkit-scrollbar-thumb { background: #3d3a4e; border-radius: 3px; }
   </style>
 </head>
 <body>
@@ -162,135 +82,171 @@
         <span class="text-xl">💜</span>
         <span class="font-bold text-lg">Confidence Book</span>
       </div>
-      <div class="flex items-center gap-2">
-        <button onclick="location.href='/profile.html'" class="p-2 rounded-xl hover:bg-purple-400/10 transition" title="Profil">
+      <div class="flex items-center gap-1">
+        <!-- Notification Bell -->
+        <div class="relative">
+          <button onclick="toggleNotifPanel()" id="notif-btn" class="p-2 rounded-xl hover:bg-purple-400/10 transition relative">
+            <i data-lucide="bell" class="w-5 h-5 text-gray-400"></i>
+            <span id="notif-badge" class="notif-badge hidden">0</span>
+          </button>
+          <!-- Notification Panel -->
+          <div id="notif-panel" class="notif-panel hidden">
+            <div class="p-4 border-b border-gray-800 flex items-center justify-between">
+              <span class="font-semibold text-sm">Notifications</span>
+              <button onclick="markAllRead()" class="text-xs text-purple-400 hover:underline">Mark all read</button>
+            </div>
+            <div id="notif-list" class="p-2"></div>
+          </div>
+        </div>
+        <button onclick="location.href='/profile.html'" class="p-2 rounded-xl hover:bg-purple-400/10 transition">
           <i data-lucide="user" class="w-5 h-5 text-gray-400"></i>
         </button>
-        <button onclick="location.href='/settings.html'" class="p-2 rounded-xl hover:bg-purple-400/10 transition" title="Paramètres">
+        <button onclick="location.href='/settings.html'" class="p-2 rounded-xl hover:bg-purple-400/10 transition">
           <i data-lucide="settings" class="w-5 h-5 text-gray-400"></i>
         </button>
       </div>
     </div>
   </header>
 
-  <div class="max-w-2xl mx-auto px-4 py-6 space-y-5">
+  <div class="max-w-2xl mx-auto px-4 py-5 space-y-4">
 
-    <!-- Limite banner (affiché si limite atteinte) -->
+    <!-- Limit banner -->
     <div id="limit-banner" class="limit-banner hidden">
-      <p class="text-yellow-400 font-semibold text-sm" id="limit-msg"></p>
+      <p class="text-yellow-400 text-sm font-semibold" id="limit-msg"></p>
     </div>
 
-    <!-- Compose -->
-    <div id="compose-area" class="compose-area" onclick="openPublishModal()">
-      <div class="flex items-center gap-3">
-        <div class="w-9 h-9 rounded-full bg-purple-600/20 flex items-center justify-center text-lg">💜</div>
-        <p class="text-gray-500 text-sm flex-1" id="compose-placeholder">Exprime-toi en toute sécurité...</p>
-        <span class="text-xs text-purple-400 font-semibold" id="compose-limit-tag"></span>
+    <!-- Weekly Prompt -->
+    <div id="weekly-prompt" class="prompt-card hidden fade-in">
+      <div class="flex items-start gap-3">
+        <span class="text-2xl mt-0.5">✨</span>
+        <div class="flex-1">
+          <p class="text-xs text-purple-400 font-semibold uppercase tracking-wide mb-1">Question of the week</p>
+          <p class="text-gray-200 leading-relaxed" id="prompt-text"></p>
+          <button onclick="openPublishWithPrompt()" class="mt-3 text-sm text-purple-400 font-semibold hover:text-purple-300 transition">
+            Answer this → 
+          </button>
+        </div>
+        <button onclick="document.getElementById('weekly-prompt').classList.add('hidden')" class="text-gray-600 hover:text-gray-400 transition">
+          <i data-lucide="x" class="w-4 h-4"></i>
+        </button>
       </div>
     </div>
 
-    <!-- Filters -->
-    <div class="flex gap-2 overflow-x-auto pb-1 -mx-4 px-4">
-      <button class="filter-pill active" onclick="setFilter('all')" data-filter="all">Tous</button>
-      <button class="filter-pill" onclick="setFilter('ruptures')" data-filter="ruptures">💔 Ruptures</button>
-      <button class="filter-pill" onclick="setFilter('isolement')" data-filter="isolement">😔 Isolement</button>
-      <button class="filter-pill" onclick="setFilter('traumas')" data-filter="traumas">🔥 Traumas</button>
-      <button class="filter-pill" onclick="setFilter('stress')" data-filter="stress">🧠 Stress</button>
-      <button class="filter-pill" onclick="setFilter('spiritualite')" data-filter="spiritualite">🪞 Spiritualité</button>
-      <button class="filter-pill" onclick="setFilter('espoir')" data-filter="espoir">🤝 Espoir</button>
+    <!-- Compose -->
+    <div class="compose-area" id="compose-area" onclick="openPublishModal()">
+      <div class="flex items-center gap-3">
+        <div class="w-9 h-9 rounded-full bg-purple-600/20 flex items-center justify-center text-lg flex-shrink-0">💜</div>
+        <p class="text-gray-500 text-sm flex-1" id="compose-placeholder">Share your story, safely...</p>
+        <span class="text-xs text-purple-400 font-medium" id="compose-tag"></span>
+      </div>
+    </div>
+
+    <!-- Filters + Subscribe -->
+    <div class="space-y-2">
+      <div class="flex gap-2 overflow-x-auto pb-1 -mx-4 px-4">
+        <button class="filter-pill active" onclick="setFilter('all')" data-filter="all">All</button>
+        <button class="filter-pill" onclick="setFilter('ruptures')" data-filter="ruptures" id="pill-ruptures">💔 Breakups</button>
+        <button class="filter-pill" onclick="setFilter('isolement')" data-filter="isolement" id="pill-isolement">😔 Isolation</button>
+        <button class="filter-pill" onclick="setFilter('traumas')" data-filter="traumas" id="pill-traumas">🔥 Trauma</button>
+        <button class="filter-pill" onclick="setFilter('stress')" data-filter="stress" id="pill-stress">🧠 Stress</button>
+        <button class="filter-pill" onclick="setFilter('spiritualite')" data-filter="spiritualite" id="pill-spiritualite">🪞 Spirituality</button>
+        <button class="filter-pill" onclick="setFilter('espoir')" data-filter="espoir" id="pill-espoir">🤝 Hope</button>
+      </div>
+      <!-- Subscribe to current filter -->
+      <div id="subscribe-bar" class="hidden flex items-center justify-between px-1">
+        <p class="text-xs text-gray-500">Get notified when someone shares in this category</p>
+        <button onclick="toggleSubscription()" id="sub-btn" class="text-xs font-semibold text-purple-400 hover:text-purple-300 transition flex items-center gap-1">
+          <i data-lucide="bell" class="w-3.5 h-3.5"></i>
+          <span id="sub-btn-text">Subscribe</span>
+        </button>
+      </div>
     </div>
 
     <!-- Feed -->
     <div id="feed-container" class="space-y-4"></div>
 
     <!-- Load more -->
-    <div id="load-more-container" class="hidden text-center pb-6">
-      <button onclick="loadMore()" id="load-more-btn" class="btn-primary px-8 py-3">
-        Charger plus
-      </button>
+    <div id="load-more-container" class="hidden text-center pb-8">
+      <button onclick="loadMore()" class="btn-primary px-8 py-3">Load more</button>
     </div>
+
   </div>
 
   <!-- Publish Modal -->
-  <div id="publish-modal" class="modal-overlay hidden" onclick="handleModalClick(event)">
+  <div id="publish-modal" class="modal-overlay hidden" onclick="if(event.target.id==='publish-modal')closePublishModal()">
     <div class="modal-box p-6">
       <div class="flex items-center justify-between mb-5">
-        <h2 class="text-lg font-bold">Nouvelle confidence</h2>
+        <h2 class="text-lg font-bold">New Confidence</h2>
         <button onclick="closePublishModal()" class="p-2 rounded-xl hover:bg-white/5 transition">
           <i data-lucide="x" class="w-5 h-5 text-gray-400"></i>
         </button>
       </div>
 
-      <!-- Publishing overlay (shown during moderation) -->
-      <div id="publishing-state" class="publishing-overlay hidden mb-4">
-        <div class="spinner mb-2"></div>
-        <p class="text-purple-300 text-sm font-medium">Modération en cours...</p>
-        <p class="text-gray-500 text-xs mt-1">Ton message est analysé par notre IA de bienveillance</p>
+      <!-- Moderation state -->
+      <div id="publishing-state" class="hidden mb-4 p-4 rounded-xl text-center" style="background:#7c3aed15;border:1px solid #7c3aed30">
+        <div class="spinner mx-auto mb-2"></div>
+        <p class="text-purple-300 text-sm font-medium">AI moderation in progress...</p>
+        <p class="text-gray-500 text-xs mt-1">Your message is being reviewed for safety</p>
       </div>
 
       <textarea id="conf-content" class="textarea-field mb-4" rows="5"
-        placeholder="Exprime-toi librement. Tristesse, colère, peur, espoir... tout est bienvenu."></textarea>
+        placeholder="Express yourself freely. Sadness, anger, fear, hope... everything is welcome."></textarea>
 
-      <label class="block text-sm text-gray-400 mb-2 font-medium">Chapitre émotionnel</label>
+      <label class="block text-sm text-gray-400 mb-2 font-medium">Emotional chapter</label>
       <select id="conf-emotion" class="select-field mb-5">
-        <option value="ruptures">💔 Ruptures & Relations</option>
-        <option value="isolement">😔 Isolement & Tristesse</option>
-        <option value="traumas">🔥 Traumas & Expériences</option>
-        <option value="stress">🧠 Stress & Santé Mentale</option>
-        <option value="spiritualite">🪞 Spiritualité & Quête de Sens</option>
-        <option value="espoir">🤝 Espoir & Reconstruction</option>
+        <option value="ruptures">💔 Breakups & Relationships</option>
+        <option value="isolement">😔 Isolation & Sadness</option>
+        <option value="traumas">🔥 Trauma & Experiences</option>
+        <option value="stress">🧠 Stress & Mental Health</option>
+        <option value="spiritualite">🪞 Spirituality & Meaning</option>
+        <option value="espoir">🤝 Hope & Rebuilding</option>
       </select>
 
       <div class="flex gap-3">
-        <button onclick="closePublishModal()" class="flex-1 py-3 rounded-xl border border-gray-700 text-gray-400 hover:border-gray-500 transition font-medium">
-          Annuler
-        </button>
-        <button onclick="publishConfidence()" id="publish-btn" class="btn-primary flex-1 py-3">
-          Publier anonymement
-        </button>
+        <button onclick="closePublishModal()" class="flex-1 py-3 rounded-xl border border-gray-700 text-gray-400 hover:border-gray-500 transition font-medium">Cancel</button>
+        <button onclick="publishConfidence()" id="publish-btn" class="btn-primary flex-1 py-3">Publish anonymously</button>
       </div>
     </div>
   </div>
 
   <!-- Reactions Modal -->
-  <div id="reactions-modal" class="modal-overlay hidden" onclick="handleReactionsModalClick(event)">
-    <div class="modal-box">
-      <div class="p-5 border-b border-gray-800">
-        <p class="text-sm text-gray-400 text-center">Comment tu te sens par rapport à cette confidence ?</p>
-      </div>
-      <div class="reactions-grid">
-        <button onclick="react('soutiens')" class="reaction-option"><span class="text-xl">🤝</span><span class="text-sm font-medium">Je te soutiens</span></button>
-        <button onclick="react('espoir')" class="reaction-option"><span class="text-xl">🔥</span><span class="text-sm font-medium">Garde espoir</span></button>
-        <button onclick="react('compatis')" class="reaction-option"><span class="text-xl">💜</span><span class="text-sm font-medium">Je compatis</span></button>
-        <button onclick="react('pas_seul')" class="reaction-option"><span class="text-xl">🫂</span><span class="text-sm font-medium">T'es pas seul·e</span></button>
-        <button onclick="react('courage')" class="reaction-option"><span class="text-xl">🙌</span><span class="text-sm font-medium">Courage</span></button>
-        <button onclick="react('triste')" class="reaction-option"><span class="text-xl">💔</span><span class="text-sm font-medium">Triste</span></button>
+  <div id="reactions-modal" class="modal-overlay hidden" onclick="if(event.target.id==='reactions-modal')document.getElementById('reactions-modal').classList.add('hidden')">
+    <div class="modal-box p-5">
+      <p class="text-sm text-gray-400 text-center mb-4">How does this confidence make you feel?</p>
+      <div class="space-y-2">
+        <button onclick="react('soutiens')" class="reaction-option"><span class="text-xl">🤝</span><span class="font-medium">I support you</span></button>
+        <button onclick="react('espoir')" class="reaction-option"><span class="text-xl">🔥</span><span class="font-medium">Keep hope</span></button>
+        <button onclick="react('compatis')" class="reaction-option"><span class="text-xl">💜</span><span class="font-medium">I empathize</span></button>
+        <button onclick="react('pas_seul')" class="reaction-option"><span class="text-xl">🫂</span><span class="font-medium">You're not alone</span></button>
+        <button onclick="react('courage')" class="reaction-option"><span class="text-xl">🙌</span><span class="font-medium">Courage</span></button>
+        <button onclick="react('triste')" class="reaction-option"><span class="text-xl">💔</span><span class="font-medium">Heartbroken for you</span></button>
       </div>
     </div>
   </div>
 
-  <!-- Warning modal (suicidal content) -->
+  <!-- Warning modal -->
   <div id="warning-modal" class="modal-overlay hidden">
     <div class="modal-box p-6">
       <div class="text-center mb-5">
         <div class="text-3xl mb-3">💙</div>
-        <h2 class="text-lg font-bold mb-2">Besoin d'aide immédiate ?</h2>
-        <p class="text-gray-400 text-sm">Ta confidence a été publiée. Si tu ressens un danger immédiat, ces ressources sont disponibles maintenant :</p>
+        <h2 class="text-lg font-bold mb-2">Need immediate help?</h2>
+        <p class="text-gray-400 text-sm">Your confidence was published. If you feel in immediate danger, these resources are available now:</p>
       </div>
       <div class="space-y-2 mb-5">
         <div class="flex items-center gap-3 p-3 rounded-xl" style="background:#ef444420;border:1px solid #ef444440">
-          <span class="text-xl">🇫🇷</span><div><p class="font-bold text-red-400">3114</p><p class="text-xs text-gray-400">France - 24h/7j</p></div>
+          <span class="text-xl">🇫🇷</span><div><p class="font-bold text-red-400">3114</p><p class="text-xs text-gray-400">France — 24/7</p></div>
         </div>
         <div class="flex items-center gap-3 p-3 rounded-xl" style="background:#ef444420;border:1px solid #ef444440">
-          <span class="text-xl">🇧🇪</span><div><p class="font-bold text-red-400">0800 32 123</p><p class="text-xs text-gray-400">Belgique - Gratuit</p></div>
+          <span class="text-xl">🇬🇧</span><div><p class="font-bold text-red-400">116 123</p><p class="text-xs text-gray-400">UK — Samaritans</p></div>
+        </div>
+        <div class="flex items-center gap-3 p-3 rounded-xl" style="background:#ef444420;border:1px solid #ef444440">
+          <span class="text-xl">🇺🇸</span><div><p class="font-bold text-red-400">988</p><p class="text-xs text-gray-400">USA — Suicide & Crisis Lifeline</p></div>
         </div>
         <div class="flex items-center gap-3 p-3 rounded-xl" style="background:#ef444420;border:1px solid #ef444440">
           <span class="text-xl">🇨🇦</span><div><p class="font-bold text-red-400">1-833-456-4566</p><p class="text-xs text-gray-400">Canada</p></div>
         </div>
       </div>
-      <button onclick="document.getElementById('warning-modal').classList.add('hidden')" class="btn-primary w-full py-3">
-        Je suis en sécurité, continuer
-      </button>
+      <button onclick="document.getElementById('warning-modal').classList.add('hidden')" class="btn-primary w-full py-3">I'm safe, continue</button>
     </div>
   </div>
 
@@ -301,53 +257,183 @@
     let currentFilter = 'all';
     let currentPage = 1;
     let currentConfidenceId = null;
-    let userLimits = null;
+    let userSubscriptions = [];
+    let notifPanelOpen = false;
 
-    // Charger les limites utilisateur au démarrage
-    async function loadUserLimits() {
+    const CHAPTERS = {
+      ruptures:     { emoji: '💔', label: 'Breakups',      color: '#ef4444' },
+      isolement:    { emoji: '😔', label: 'Isolation',     color: '#3b82f6' },
+      traumas:      { emoji: '🔥', label: 'Trauma',        color: '#f97316' },
+      stress:       { emoji: '🧠', label: 'Stress',        color: '#8b5cf6' },
+      spiritualite: { emoji: '🪞', label: 'Spirituality',  color: '#6366f1' },
+      espoir:       { emoji: '🤝', label: 'Hope',          color: '#10b981' }
+    };
+
+    // ── Init ─────────────────────────────────────────────────────────────────
+
+    async function init() {
+      await Promise.all([loadUserData(), loadWeeklyPrompt(), loadFeed(1, false), loadNotifications()]);
+    }
+
+    async function loadUserData() {
       try {
-        const res = await fetch('/api/profile', { headers: { 'X-User-ID': userId } });
-        const data = await res.json();
-        if (data.success) {
-          userLimits = data.profile.limits;
-          updateComposeBanner();
+        const [profileRes, subRes] = await Promise.all([
+          fetch('/api/profile', { headers: { 'X-User-ID': userId } }),
+          fetch('/api/subscriptions', { headers: { 'X-User-ID': userId } })
+        ]);
+        const profileData = await profileRes.json();
+        const subData = await subRes.json();
+
+        if (profileData.success) {
+          const limits = profileData.profile.limits;
+          if (!limits.canPost) {
+            document.getElementById('limit-banner').classList.remove('hidden');
+            document.getElementById('limit-msg').textContent = `⏳ You've already shared this week. Next reset: ${limits.nextPostReset}`;
+            document.getElementById('compose-tag').textContent = '1/week';
+            document.getElementById('compose-area').style.opacity = '0.5';
+            document.getElementById('compose-area').style.cursor = 'default';
+            document.getElementById('compose-area').onclick = null;
+          } else {
+            document.getElementById('compose-tag').textContent = '1 left this week';
+          }
+        }
+
+        if (subData.success) {
+          userSubscriptions = subData.subscriptions;
+          updateSubscriptionPills();
         }
       } catch (e) {}
     }
 
-    function updateComposeBanner() {
-      if (!userLimits) return;
-      const banner = document.getElementById('limit-banner');
-      const msg = document.getElementById('limit-msg');
-      const tag = document.getElementById('compose-limit-tag');
-      const area = document.getElementById('compose-area');
-
-      if (!userLimits.canPost) {
-        banner.classList.remove('hidden');
-        msg.textContent = `⏳ Tu as déjà publié ta confidence de la semaine. Prochain reset le ${userLimits.nextPostReset}.`;
-        tag.textContent = '1/semaine';
-        area.classList.add('disabled');
-        area.onclick = null;
-      } else {
-        banner.classList.add('hidden');
-        tag.textContent = '1 restant cette semaine';
-        area.classList.remove('disabled');
-        area.onclick = openPublishModal;
-      }
+    async function loadWeeklyPrompt() {
+      try {
+        const res = await fetch('/api/prompt');
+        const data = await res.json();
+        if (data.success) {
+          document.getElementById('prompt-text').textContent = data.prompt.en;
+          document.getElementById('weekly-prompt').classList.remove('hidden');
+        }
+      } catch (e) {}
     }
 
-    // Feed
-    async function loadFeed(page = 1, append = false) {
-      if (!append) {
-        document.getElementById('feed-container').innerHTML = renderSkeletons(3);
-      }
+    // ── Notifications ─────────────────────────────────────────────────────────
 
+    async function loadNotifications() {
+      try {
+        const res = await fetch('/api/notifications', { headers: { 'X-User-ID': userId } });
+        const data = await res.json();
+        if (!data.success) return;
+
+        const badge = document.getElementById('notif-badge');
+        if (data.unreadCount > 0) {
+          badge.classList.remove('hidden');
+          badge.textContent = data.unreadCount > 9 ? '9+' : data.unreadCount;
+        } else {
+          badge.classList.add('hidden');
+        }
+
+        const list = document.getElementById('notif-list');
+        if (data.notifications.length === 0) {
+          list.innerHTML = '<p class="text-center text-gray-500 text-sm py-6">No notifications yet</p>';
+          return;
+        }
+
+        list.innerHTML = data.notifications.map(n => `
+          <div class="flex items-start gap-3 p-3 rounded-xl transition ${n.read ? '' : 'bg-purple-500/5'} hover:bg-white/3 cursor-pointer"
+               onclick="n.related_id && (location.href='/post.html?id=${n.related_id}')">
+            <span class="text-lg flex-shrink-0">${n.type === 'new_confidence' ? '🔔' : n.type === 'new_response' ? '💬' : n.type === 'premium_activated' ? '👑' : '✨'}</span>
+            <div class="flex-1 min-w-0">
+              <p class="text-sm text-gray-200 ${n.read ? '' : 'font-semibold'}">${n.message}</p>
+              <p class="text-xs text-gray-500 mt-0.5">${timeAgo(n.created_at)}</p>
+            </div>
+            ${!n.read ? '<div class="w-2 h-2 rounded-full bg-purple-400 flex-shrink-0 mt-1.5"></div>' : ''}
+          </div>`).join('');
+      } catch (e) {}
+    }
+
+    function toggleNotifPanel() {
+      const panel = document.getElementById('notif-panel');
+      notifPanelOpen = !notifPanelOpen;
+      panel.classList.toggle('hidden', !notifPanelOpen);
+      if (notifPanelOpen) markAllRead();
+    }
+
+    async function markAllRead() {
+      try {
+        await fetch('/api/notifications/read', { method: 'POST', headers: { 'X-User-ID': userId } });
+        document.getElementById('notif-badge').classList.add('hidden');
+      } catch (e) {}
+    }
+
+    // Close notif panel on outside click
+    document.addEventListener('click', (e) => {
+      if (notifPanelOpen && !document.getElementById('notif-btn').contains(e.target) && !document.getElementById('notif-panel').contains(e.target)) {
+        document.getElementById('notif-panel').classList.add('hidden');
+        notifPanelOpen = false;
+      }
+    });
+
+    // ── Subscriptions ─────────────────────────────────────────────────────────
+
+    function updateSubscriptionPills() {
+      Object.keys(CHAPTERS).forEach(emotion => {
+        const pill = document.getElementById(`pill-${emotion}`);
+        if (!pill) return;
+        if (userSubscriptions.includes(emotion)) {
+          pill.classList.add('subscribed');
+          if (!pill.querySelector('.sub-dot')) {
+            const dot = document.createElement('span');
+            dot.className = 'sub-dot';
+            pill.appendChild(dot);
+          }
+        } else {
+          pill.classList.remove('subscribed');
+          const dot = pill.querySelector('.sub-dot');
+          if (dot) dot.remove();
+        }
+      });
+    }
+
+    function updateSubscribeBar() {
+      const bar = document.getElementById('subscribe-bar');
+      if (currentFilter === 'all') { bar.classList.add('hidden'); return; }
+      bar.classList.remove('hidden');
+      const isSubbed = userSubscriptions.includes(currentFilter);
+      document.getElementById('sub-btn-text').textContent = isSubbed ? 'Subscribed ✓' : 'Subscribe';
+      document.getElementById('sub-btn').style.color = isSubbed ? '#10b981' : '';
+      lucide.createIcons();
+    }
+
+    async function toggleSubscription() {
+      if (currentFilter === 'all') return;
+      try {
+        const res = await fetch('/api/subscriptions/toggle', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', 'X-User-ID': userId },
+          body: JSON.stringify({ emotion: currentFilter })
+        });
+        const data = await res.json();
+        if (data.success) {
+          if (data.action === 'subscribed') {
+            userSubscriptions.push(currentFilter);
+          } else {
+            userSubscriptions = userSubscriptions.filter(e => e !== currentFilter);
+          }
+          updateSubscriptionPills();
+          updateSubscribeBar();
+        }
+      } catch (e) {}
+    }
+
+    // ── Feed ─────────────────────────────────────────────────────────────────
+
+    async function loadFeed(page = 1, append = false) {
+      if (!append) document.getElementById('feed-container').innerHTML = renderSkeletons(3);
       try {
         const res = await fetch(`/api/confidences?chapter=${currentFilter}&page=${page}&pageSize=20`, {
           headers: { 'X-User-ID': userId }
         });
         const data = await res.json();
-
         if (!data.success) return;
 
         const container = document.getElementById('feed-container');
@@ -356,31 +442,22 @@
           container.innerHTML = `
             <div class="text-center py-16 text-gray-500">
               <p class="text-4xl mb-3">🌱</p>
-              <p class="font-medium">Aucune confidence pour le moment.</p>
-              <p class="text-sm mt-1">Sois le premier à partager.</p>
+              <p class="font-medium">No confidences yet in this category.</p>
+              <p class="text-sm mt-1">Be the first to share.</p>
             </div>`;
           return;
         }
 
-        const html = data.confidences.map(renderConfCard).join('');
-        if (append) {
-          container.insertAdjacentHTML('beforeend', html);
-        } else {
-          container.innerHTML = html;
-        }
-
+        const html = data.confidences.map(renderCard).join('');
+        if (append) container.insertAdjacentHTML('beforeend', html);
+        else container.innerHTML = html;
         lucide.createIcons();
 
-        // Pagination
-        const loadMore = document.getElementById('load-more-container');
-        if (data.pagination?.hasMore) {
-          loadMore.classList.remove('hidden');
-          currentPage = data.pagination.page;
-        } else {
-          loadMore.classList.add('hidden');
-        }
+        const lm = document.getElementById('load-more-container');
+        if (data.pagination?.hasMore) { lm.classList.remove('hidden'); currentPage = data.pagination.page; }
+        else lm.classList.add('hidden');
       } catch (e) {
-        document.getElementById('feed-container').innerHTML = `<p class="text-center text-gray-500 py-8">Erreur de chargement.</p>`;
+        document.getElementById('feed-container').innerHTML = `<p class="text-center text-gray-500 py-8">Loading error. <button onclick="loadFeed()" class="text-purple-400 underline">Retry</button></p>`;
       }
     }
 
@@ -390,23 +467,14 @@
           <div class="skeleton h-4 w-24 rounded"></div>
           <div class="skeleton h-4 w-full rounded"></div>
           <div class="skeleton h-4 w-3/4 rounded"></div>
-          <div class="skeleton h-3 w-32 rounded mt-2"></div>
         </div>`).join('');
     }
 
-    const CHAPTERS = {
-      ruptures:     { emoji: '💔', label: 'Ruptures', color: '#ef4444' },
-      isolement:    { emoji: '😔', label: 'Isolement', color: '#3b82f6' },
-      traumas:      { emoji: '🔥', label: 'Traumas', color: '#f97316' },
-      stress:       { emoji: '🧠', label: 'Stress', color: '#8b5cf6' },
-      spiritualite: { emoji: '🪞', label: 'Spiritualité', color: '#6366f1' },
-      espoir:       { emoji: '🤝', label: 'Espoir', color: '#10b981' }
-    };
-
-    function renderConfCard(conf) {
+    function renderCard(conf) {
       const ch = CHAPTERS[conf.emotion] || CHAPTERS.espoir;
       const isOwner = conf.user_id === userId;
-      const userReaction = conf.user_reaction;
+      const preview = conf.content.length > 280 ? conf.content.substring(0, 280) + '…' : conf.content;
+      const touched = conf.reaction_count > 0 ? `${conf.reaction_count} ${conf.reaction_count === 1 ? 'person' : 'people'} reacted` : '';
 
       return `
         <div class="conf-card fade-in">
@@ -415,24 +483,24 @@
               <span class="badge" style="background:${ch.color}18;color:${ch.color}">${ch.emoji} ${ch.label}</span>
               <span class="text-xs text-gray-500">${timeAgo(conf.created_at)}</span>
             </div>
-            <p class="leading-relaxed text-sm mb-4 text-gray-200">${escapeHtml(conf.content.length > 300 ? conf.content.substring(0, 300) + '...' : conf.content)}</p>
-            <div class="flex items-center gap-3 flex-wrap">
-              <button onclick="openReactions('${conf.id}')" class="react-btn ${userReaction ? 'active' : ''}">
-                <span>${conf.reaction_count || 0}</span> réaction${conf.reaction_count > 1 ? 's' : ''}
+            <p class="text-sm leading-relaxed text-gray-200 mb-4">${escapeHtml(preview)}</p>
+            ${touched ? `<p class="text-xs text-gray-600 mb-3">💜 ${touched}</p>` : ''}
+            <div class="flex items-center gap-2 flex-wrap">
+              <button onclick="openReactions('${conf.id}')" class="react-btn ${conf.user_reaction ? 'active' : ''}">
+                ${conf.user_reaction ? '✓' : '+'} React
               </button>
               <button onclick="location.href='/post.html?id=${conf.id}'" class="react-btn">
-                <i data-lucide="message-circle" class="w-3.5 h-3.5"></i>
-                <span>${conf.response_count || 0}</span> réponse${conf.response_count > 1 ? 's' : ''}
+                <i data-lucide="message-circle" class="w-3.5 h-3.5"></i> ${conf.response_count || 0} reply
               </button>
               <button onclick="location.href='/post.html?id=${conf.id}'" class="react-btn ml-auto" style="color:#a78bfa;border-color:#7c3aed40">
-                Lire & répondre →
+                Read & reply →
               </button>
             </div>
           </div>
           ${isOwner ? `
-          <div class="border-t border-gray-800 px-5 py-3 flex gap-3">
+          <div class="border-t border-gray-800 px-5 py-2.5 flex">
             <button onclick="deleteConfidence('${conf.id}')" class="text-xs text-red-400 hover:text-red-300 transition flex items-center gap-1">
-              <i data-lucide="trash-2" class="w-3 h-3"></i> Supprimer
+              <i data-lucide="trash-2" class="w-3 h-3"></i> Delete
             </button>
           </div>` : ''}
         </div>`;
@@ -441,45 +509,42 @@
     function setFilter(filter) {
       currentFilter = filter;
       currentPage = 1;
-      document.querySelectorAll('.filter-pill').forEach(btn => {
-        btn.classList.toggle('active', btn.dataset.filter === filter);
-      });
+      document.querySelectorAll('.filter-pill').forEach(btn => btn.classList.toggle('active', btn.dataset.filter === filter));
+      updateSubscribeBar();
       loadFeed(1, false);
     }
 
-    function loadMore() {
-      loadFeed(currentPage + 1, true);
-    }
+    function loadMore() { loadFeed(currentPage + 1, true); }
 
-    // Publish
+    // ── Publish ───────────────────────────────────────────────────────────────
+
     function openPublishModal() {
-      if (userLimits && !userLimits.canPost) return;
       document.getElementById('publish-modal').classList.remove('hidden');
       lucide.createIcons();
+    }
+
+    function openPublishWithPrompt() {
+      const promptText = document.getElementById('prompt-text').textContent;
+      openPublishModal();
+      document.getElementById('conf-content').placeholder = promptText;
     }
 
     function closePublishModal() {
       document.getElementById('publish-modal').classList.add('hidden');
       document.getElementById('conf-content').value = '';
+      document.getElementById('conf-content').placeholder = 'Express yourself freely...';
       document.getElementById('publishing-state').classList.add('hidden');
-    }
-
-    function handleModalClick(e) {
-      if (e.target.id === 'publish-modal') closePublishModal();
     }
 
     async function publishConfidence() {
       const content = document.getElementById('conf-content').value.trim();
       const emotion = document.getElementById('conf-emotion').value;
-
-      if (content.length < 10) { alert('Écris au moins quelques mots.'); return; }
+      if (content.length < 10) { alert('Write at least a few words.'); return; }
 
       const btn = document.getElementById('publish-btn');
-      const publishingState = document.getElementById('publishing-state');
-
       btn.disabled = true;
-      btn.textContent = 'Analyse en cours...';
-      publishingState.classList.remove('hidden');
+      btn.textContent = 'Analyzing...';
+      document.getElementById('publishing-state').classList.remove('hidden');
 
       try {
         const res = await fetch('/api/confidences', {
@@ -491,40 +556,34 @@
 
         if (data.success) {
           closePublishModal();
-          if (data.warning) {
-            document.getElementById('warning-modal').classList.remove('hidden');
-          }
-          await loadUserLimits();
+          if (data.warning) document.getElementById('warning-modal').classList.remove('hidden');
+          await loadUserData();
           loadFeed(1, false);
         } else if (data.limitType === 'weekly_post') {
           closePublishModal();
           alert(data.message);
         } else if (data.limitType === 'moderation') {
-          alert(`Message non publié : ${data.reason || 'Contenu non conforme à nos règles.'}`);
+          alert(`Not published: ${data.reason || 'Content does not meet our guidelines.'}`);
         } else {
-          alert(data.message || 'Erreur lors de la publication.');
+          alert(data.message || 'Publishing error.');
         }
       } catch (e) {
-        alert('Erreur de connexion. Réessaie.');
+        alert('Connection error. Please try again.');
       } finally {
         btn.disabled = false;
-        btn.textContent = 'Publier anonymement';
-        publishingState.classList.add('hidden');
+        btn.textContent = 'Publish anonymously';
+        document.getElementById('publishing-state').classList.add('hidden');
       }
     }
 
-    // Reactions
+    // ── Reactions ─────────────────────────────────────────────────────────────
+
     function openReactions(confId) {
       currentConfidenceId = confId;
       document.getElementById('reactions-modal').classList.remove('hidden');
     }
 
-    function handleReactionsModalClick(e) {
-      if (e.target.id === 'reactions-modal') document.getElementById('reactions-modal').classList.add('hidden');
-    }
-
     async function react(type) {
-      if (!currentConfidenceId) return;
       document.getElementById('reactions-modal').classList.add('hidden');
       try {
         await fetch('/api/reactions', {
@@ -537,30 +596,24 @@
     }
 
     async function deleteConfidence(id) {
-      if (!confirm('Supprimer cette confidence ?')) return;
+      if (!confirm('Delete this confidence?')) return;
       try {
         await fetch(`/api/confidences/${id}`, { method: 'DELETE', headers: { 'X-User-ID': userId } });
         loadFeed(1, false);
       } catch (e) {}
     }
 
-    function escapeHtml(text) {
-      const d = document.createElement('div');
-      d.textContent = text;
-      return d.innerHTML;
-    }
+    function escapeHtml(text) { const d = document.createElement('div'); d.textContent = text; return d.innerHTML; }
 
     function timeAgo(ts) {
       const s = Math.floor((Date.now() - ts) / 1000);
-      if (s < 60) return "À l'instant";
-      if (s < 3600) return `${Math.floor(s/60)}min`;
+      if (s < 60) return "Just now";
+      if (s < 3600) return `${Math.floor(s/60)}m`;
       if (s < 86400) return `${Math.floor(s/3600)}h`;
-      return `${Math.floor(s/86400)}j`;
+      return `${Math.floor(s/86400)}d`;
     }
 
-    // Init
-    loadUserLimits();
-    loadFeed(1, false);
+    init();
     lucide.createIcons();
   </script>
 </body>
