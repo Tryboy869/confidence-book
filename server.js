@@ -22,6 +22,21 @@ const LIMITS = {
   PREMIUM_EXPIRY_DAYS: 36500
 };
 
+const WEEKLY_PROMPTS = [
+  { fr: "Qu'est-ce qui t'a surpris cette semaine, en bien ou en mal ?", en: "What surprised you this week, good or bad?" },
+  { fr: "Y a-t-il quelque chose que tu portes seul·e depuis trop longtemps ?", en: "Is there something you've been carrying alone for too long?" },
+  { fr: "Quel moment de cette semaine t'a demandé le plus de courage ?", en: "What moment this week required the most courage from you?" },
+  { fr: "Si tu pouvais changer une chose dans ta vie aujourd'hui, ce serait quoi ?", en: "If you could change one thing in your life today, what would it be?" },
+  { fr: "Qu'est-ce qui te pèse en ce moment que tu n'as jamais dit à voix haute ?", en: "What's weighing on you right now that you've never said out loud?" },
+  { fr: "Comment tu vas, vraiment ?", en: "How are you, really?" },
+  { fr: "Qu'est-ce que tu aurais voulu entendre de quelqu'un cette semaine ?", en: "What would you have wanted to hear from someone this week?" },
+  { fr: "Y a-t-il une douleur ancienne qui refait surface en ce moment ?", en: "Is there an old pain resurfacing right now?" },
+  { fr: "Qu'est-ce qui t'empêche de te sentir en paix aujourd'hui ?", en: "What's preventing you from feeling at peace today?" },
+  { fr: "Si tu écrivais une lettre à toi-même dans 1 an, que dirais-tu ?", en: "If you wrote a letter to yourself in 1 year, what would you say?" },
+  { fr: "Qu'est-ce que tu as appris sur toi-même récemment ?", en: "What have you learned about yourself recently?" },
+  { fr: "Quelle est la chose dont tu es le plus fier·ère cette semaine, même petite ?", en: "What are you most proud of this week, even something small?" }
+];
+
 export class BackendService {
   constructor() { this.db = null; }
 
@@ -46,7 +61,7 @@ export class BackendService {
         premium_start INTEGER,
         premium_end INTEGER,
         premium_payment_id TEXT,
-        settings TEXT DEFAULT '{"theme":"dark","avatar":"moon","language":"fr"}'
+        settings TEXT DEFAULT '{"theme":"dark","avatar":"moon","language":"en"}'
       )`);
 
       await this.db.execute(`CREATE TABLE IF NOT EXISTS confidences (
@@ -96,6 +111,37 @@ export class BackendService {
         FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
       )`);
 
+      await this.db.execute(`CREATE TABLE IF NOT EXISTS journal_entries (
+        id TEXT PRIMARY KEY,
+        user_id TEXT NOT NULL,
+        content TEXT NOT NULL,
+        mood TEXT,
+        created_at INTEGER NOT NULL,
+        FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+      )`);
+
+      // NOUVEAU : abonnements aux catégories
+      await this.db.execute(`CREATE TABLE IF NOT EXISTS subscriptions (
+        id TEXT PRIMARY KEY,
+        user_id TEXT NOT NULL,
+        emotion TEXT NOT NULL,
+        created_at INTEGER NOT NULL,
+        UNIQUE(user_id, emotion),
+        FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+      )`);
+
+      // NOUVEAU : notifications in-app
+      await this.db.execute(`CREATE TABLE IF NOT EXISTS notifications (
+        id TEXT PRIMARY KEY,
+        user_id TEXT NOT NULL,
+        type TEXT NOT NULL,
+        message TEXT NOT NULL,
+        related_id TEXT,
+        read INTEGER DEFAULT 0,
+        created_at INTEGER NOT NULL,
+        FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+      )`);
+
       console.log('✅ DB migration OK');
     } catch (err) {
       console.error('❌ Migration failed:', err);
@@ -105,6 +151,9 @@ export class BackendService {
 
   async resetDatabase() {
     console.log('🔄 Resetting database...');
+    await this.db.execute('DROP TABLE IF EXISTS notifications');
+    await this.db.execute('DROP TABLE IF EXISTS subscriptions');
+    await this.db.execute('DROP TABLE IF EXISTS journal_entries');
     await this.db.execute('DROP TABLE IF EXISTS response_reactions');
     await this.db.execute('DROP TABLE IF EXISTS responses');
     await this.db.execute('DROP TABLE IF EXISTS reactions');
@@ -124,12 +173,12 @@ export class BackendService {
   }
 
   async moderateContent(content) {
-    const prompt = `Tu es un système de modération pour une plateforme de soutien émotionnel anonyme.
-ACCEPTER : tristesse, colère, peur, détresse, pensées suicidaires (appel aide), trauma, langage cru non haineux.
-WARNING : mentions de mort/suicide → approuver mais flaguer.
-REJETER : violence envers autrui, haine/discrimination, spam, contenu sexuel explicite, infos personnelles identifiables.
-Contenu : "${content.replace(/"/g, '\\"').substring(0, 800)}"
-JSON uniquement : {"approved":true/false,"reason":"court","warning":true/false}`;
+    const prompt = `You are a moderation system for an anonymous emotional support platform.
+ACCEPT: sadness, anger, fear, loneliness, despair, suicidal thoughts (cry for help), trauma, past abuse, raw but non-hateful language.
+WARNING: mentions of death/suicide → approve but flag warning:true.
+REJECT: explicit violence toward others, hate/discrimination, spam, explicit sexual content (but accept "I was sexually assaulted"), personal identifying information.
+Content: "${content.replace(/"/g, '\\"').substring(0, 800)}"
+JSON only: {"approved":true/false,"reason":"short","warning":true/false}`;
 
     for (const model of GROQ_MODELS) {
       try {
@@ -148,41 +197,40 @@ JSON uniquement : {"approved":true/false,"reason":"court","warning":true/false}`
         continue;
       }
     }
-    console.warn('⚠️ All models failed - fail-open');
     return { approved: true, reason: 'fail-open', warning: false, model: 'none' };
   }
 
   async checkPostLimit(userId) {
-    const oneWeekAgo = Date.now() - 7 * 24 * 60 * 60 * 1000;
-    const r = await this.db.execute({ sql: 'SELECT COUNT(*) as c FROM confidences WHERE user_id = ? AND created_at > ?', args: [userId, oneWeekAgo] });
+    const r = await this.db.execute({ sql: 'SELECT COUNT(*) as c FROM confidences WHERE user_id = ? AND created_at > ?', args: [userId, Date.now() - 7 * 86400000] });
     return r.rows[0].c;
   }
 
   async checkCommentLimit(userId) {
-    const oneDayAgo = Date.now() - 24 * 60 * 60 * 1000;
-    const r = await this.db.execute({ sql: 'SELECT COUNT(*) as c FROM responses WHERE user_id = ? AND created_at > ?', args: [userId, oneDayAgo] });
+    const r = await this.db.execute({ sql: 'SELECT COUNT(*) as c FROM responses WHERE user_id = ? AND created_at > ?', args: [userId, Date.now() - 86400000] });
     return r.rows[0].c;
   }
 
   getNextWeekReset() {
-    const d = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000);
-    return d.toLocaleDateString('fr-FR', { day: 'numeric', month: 'long' });
+    return new Date(Date.now() + 7 * 86400000).toLocaleDateString('en-GB', { day: 'numeric', month: 'long' });
   }
 
   getNextDayReset() {
-    const d = new Date(Date.now() + 24 * 60 * 60 * 1000);
-    return d.toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' });
+    return new Date(Date.now() + 86400000).toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' });
+  }
+
+  getWeeklyPrompt() {
+    const weekNumber = Math.floor(Date.now() / (7 * 86400000));
+    return WEEKLY_PROMPTS[weekNumber % WEEKLY_PROMPTS.length];
   }
 
   // ─── Auth ────────────────────────────────────────────────────────────────────
 
   async createUser(secretPhrase) {
     const userId = this.generateId('CB');
-    const phraseHash = this.hashPhrase(secretPhrase);
     const now = Date.now();
     await this.db.execute({
       sql: 'INSERT INTO users (id, secret_phrase_hash, created_at, last_active) VALUES (?, ?, ?, ?)',
-      args: [userId, phraseHash, now, now]
+      args: [userId, this.hashPhrase(secretPhrase), now, now]
     });
     return { success: true, userId };
   }
@@ -200,7 +248,104 @@ JSON uniquement : {"approved":true/false,"reason":"court","warning":true/false}`
       await this.db.execute({ sql: 'UPDATE users SET last_active = ? WHERE id = ?', args: [Date.now(), userId] });
       return { success: true, userId };
     }
-    return { success: false, message: 'ID ou phrase secrète invalide' };
+    return { success: false, message: 'Invalid ID or secret phrase' };
+  }
+
+  // ─── Subscriptions (abonnements catégories) ───────────────────────────────
+
+  async getSubscriptions(headers) {
+    const userId = headers['x-user-id'];
+    if (!userId) return { success: false, message: 'Unauthorized' };
+    const r = await this.db.execute({ sql: 'SELECT emotion FROM subscriptions WHERE user_id = ?', args: [userId] });
+    return { success: true, subscriptions: r.rows.map(row => row.emotion) };
+  }
+
+  async toggleSubscription(data, headers) {
+    const userId = headers['x-user-id'];
+    if (!userId) return { success: false, message: 'Unauthorized' };
+    const { emotion } = data;
+    if (!emotion) return { success: false, message: 'Missing emotion' };
+
+    const existing = await this.db.execute({ sql: 'SELECT id FROM subscriptions WHERE user_id = ? AND emotion = ?', args: [userId, emotion] });
+    if (existing.rows.length > 0) {
+      await this.db.execute({ sql: 'DELETE FROM subscriptions WHERE user_id = ? AND emotion = ?', args: [userId, emotion] });
+      return { success: true, action: 'unsubscribed', emotion };
+    }
+    await this.db.execute({
+      sql: 'INSERT INTO subscriptions (id, user_id, emotion, created_at) VALUES (?, ?, ?, ?)',
+      args: [this.generateId('sub'), userId, emotion, Date.now()]
+    });
+    return { success: true, action: 'subscribed', emotion };
+  }
+
+  // Notifie les abonnés quand une nouvelle confidence est publiée dans leur catégorie
+  async notifySubscribers(confidenceId, emotion, authorId) {
+    try {
+      const subscribers = await this.db.execute({
+        sql: 'SELECT user_id FROM subscriptions WHERE emotion = ? AND user_id != ?',
+        args: [emotion, authorId]
+      });
+
+      const EMOTION_LABELS = {
+        ruptures: 'Ruptures', isolement: 'Isolation', traumas: 'Traumas',
+        stress: 'Stress & Mental Health', spiritualite: 'Spirituality', espoir: 'Hope'
+      };
+
+      for (const sub of subscribers.rows) {
+        await this.db.execute({
+          sql: 'INSERT INTO notifications (id, user_id, type, message, related_id, created_at) VALUES (?, ?, ?, ?, ?, ?)',
+          args: [
+            this.generateId('notif'),
+            sub.user_id,
+            'new_confidence',
+            `New confidence in ${EMOTION_LABELS[emotion] || emotion}`,
+            confidenceId,
+            Date.now()
+          ]
+        });
+      }
+    } catch (e) {
+      console.warn('⚠️ Notification dispatch failed:', e.message);
+    }
+  }
+
+  // Notifie l'auteur d'une confidence quand quelqu'un y répond
+  async notifyConfidenceAuthor(confidenceId, responderId) {
+    try {
+      const conf = await this.db.execute({ sql: 'SELECT user_id FROM confidences WHERE id = ?', args: [confidenceId] });
+      if (conf.rows.length === 0) return;
+      const authorId = conf.rows[0].user_id;
+      if (authorId === responderId) return; // pas de notif à soi-même
+
+      await this.db.execute({
+        sql: 'INSERT INTO notifications (id, user_id, type, message, related_id, created_at) VALUES (?, ?, ?, ?, ?, ?)',
+        args: [this.generateId('notif'), authorId, 'new_response', 'Someone responded to your confidence with kindness', confidenceId, Date.now()]
+      });
+    } catch (e) {
+      console.warn('⚠️ Author notification failed:', e.message);
+    }
+  }
+
+  // ─── Notifications ────────────────────────────────────────────────────────
+
+  async getNotifications(headers) {
+    const userId = headers['x-user-id'];
+    if (!userId) return { success: false, message: 'Unauthorized' };
+
+    const notifs = await this.db.execute({
+      sql: 'SELECT * FROM notifications WHERE user_id = ? ORDER BY created_at DESC LIMIT 30',
+      args: [userId]
+    });
+    const unreadCount = notifs.rows.filter(n => n.read === 0).length;
+
+    return { success: true, notifications: notifs.rows, unreadCount };
+  }
+
+  async markNotificationsRead(headers) {
+    const userId = headers['x-user-id'];
+    if (!userId) return { success: false, message: 'Unauthorized' };
+    await this.db.execute({ sql: 'UPDATE notifications SET read = 1 WHERE user_id = ?', args: [userId] });
+    return { success: true };
   }
 
   // ─── Confidences ─────────────────────────────────────────────────────────────
@@ -211,33 +356,33 @@ JSON uniquement : {"approved":true/false,"reason":"court","warning":true/false}`
 
     const user = await this.db.execute({ sql: 'SELECT premium FROM users WHERE id = ?', args: [userId] });
     if (user.rows.length === 0) return { success: false, message: 'User not found' };
-
     const isPremium = user.rows[0].premium === 1;
 
     if (!isPremium) {
       const postsThisWeek = await this.checkPostLimit(userId);
       if (postsThisWeek >= LIMITS.POST_PER_WEEK) {
-        return { success: false, limitType: 'weekly_post', message: `Tu as déjà publié ta confidence de la semaine. Prochain reset le ${this.getNextWeekReset()}.` };
+        return { success: false, limitType: 'weekly_post', message: `You've already shared your confidence this week. Next reset: ${this.getNextWeekReset()}.` };
       }
       const count = await this.db.execute({ sql: 'SELECT COUNT(*) as c FROM confidences WHERE user_id = ? AND expires_at > ?', args: [userId, Date.now()] });
       if (count.rows[0].c >= LIMITS.FREE_MAX_CONFIDENCES) {
-        return { success: false, limitType: 'max_confidences', message: `Limite de ${LIMITS.FREE_MAX_CONFIDENCES} confidences actives atteinte.` };
+        return { success: false, limitType: 'max_confidences', message: `You've reached the ${LIMITS.FREE_MAX_CONFIDENCES} active confidences limit.` };
       }
     }
 
     const moderation = await this.moderateContent(data.content);
-    if (!moderation.approved) return { success: false, limitType: 'moderation', message: 'Contenu rejeté', reason: moderation.reason };
+    if (!moderation.approved) return { success: false, limitType: 'moderation', message: 'Content rejected', reason: moderation.reason };
 
     const confId = this.generateId('conf');
     const now = Date.now();
-    const expiresAt = isPremium
-      ? now + LIMITS.PREMIUM_EXPIRY_DAYS * 86400000
-      : now + LIMITS.CONFIDENCE_EXPIRY_DAYS * 86400000;
+    const expiresAt = isPremium ? now + LIMITS.PREMIUM_EXPIRY_DAYS * 86400000 : now + LIMITS.CONFIDENCE_EXPIRY_DAYS * 86400000;
 
     await this.db.execute({
       sql: 'INSERT INTO confidences (id, user_id, content, emotion, moderation_score, moderation_message, needs_review, created_at, expires_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)',
       args: [confId, userId, data.content, data.emotion, 1.0, moderation.reason, moderation.warning ? 1 : 0, now, expiresAt]
     });
+
+    // Notifier les abonnés de cette catégorie (en arrière-plan)
+    this.notifySubscribers(confId, data.emotion, userId);
 
     return { success: true, confidenceId: confId, warning: moderation.warning };
   }
@@ -250,11 +395,9 @@ JSON uniquement : {"approved":true/false,"reason":"court","warning":true/false}`
         (SELECT type FROM reactions WHERE confidence_id = c.id AND user_id = ?) as user_reaction
       FROM confidences c WHERE c.expires_at > ?`;
     const args = [userId || '', Date.now()];
-
     if (chapter && chapter !== 'all') { sql += ' AND c.emotion = ?'; args.push(chapter); }
     sql += ' ORDER BY c.created_at DESC LIMIT ? OFFSET ?';
     args.push(pageSize, offset);
-
     const result = await this.db.execute({ sql, args });
 
     let countSql = 'SELECT COUNT(*) as total FROM confidences WHERE expires_at > ?';
@@ -280,13 +423,18 @@ JSON uniquement : {"approved":true/false,"reason":"court","warning":true/false}`
     if (result.rows.length === 0) return { success: false, message: 'Not found' };
 
     const responses = await this.db.execute({
-      sql: `SELECT r.*,
-          (SELECT COUNT(*) FROM response_reactions WHERE response_id = r.id) as reaction_count,
+      sql: `SELECT r.*, (SELECT COUNT(*) FROM response_reactions WHERE response_id = r.id) as reaction_count,
           (SELECT type FROM response_reactions WHERE response_id = r.id AND user_id = ?) as user_reaction
         FROM responses r WHERE r.confidence_id = ? ORDER BY r.created_at ASC`,
       args: [userId || '', id]
     });
-    return { success: true, confidence: result.rows[0], responses: responses.rows };
+
+    const touchedCount = await this.db.execute({
+      sql: 'SELECT COUNT(DISTINCT user_id) as c FROM reactions WHERE confidence_id = ?',
+      args: [id]
+    });
+
+    return { success: true, confidence: result.rows[0], responses: responses.rows, touchedCount: touchedCount.rows[0].c };
   }
 
   async updateConfidence(id, data, headers) {
@@ -349,7 +497,7 @@ JSON uniquement : {"approved":true/false,"reason":"court","warning":true/false}`
     if (!isPremium) {
       const commentsToday = await this.checkCommentLimit(userId);
       if (commentsToday >= LIMITS.COMMENTS_PER_DAY) {
-        return { success: false, limitType: 'daily_comment', message: `Limite de ${LIMITS.COMMENTS_PER_DAY} commentaires atteinte aujourd'hui. Reset à ${this.getNextDayReset()}.` };
+        return { success: false, limitType: 'daily_comment', message: `You've reached your ${LIMITS.COMMENTS_PER_DAY} comments limit for today. Resets at ${this.getNextDayReset()}.` };
       }
     }
 
@@ -362,6 +510,9 @@ JSON uniquement : {"approved":true/false,"reason":"court","warning":true/false}`
       sql: 'INSERT INTO responses (id, confidence_id, user_id, content, avatar, moderation_score, created_at) VALUES (?, ?, ?, ?, ?, ?, ?)',
       args: [responseId, data.confidenceId, userId, data.content, avatar, 1.0, Date.now()]
     });
+
+    // Notifier l'auteur de la confidence (en arrière-plan)
+    this.notifyConfidenceAuthor(data.confidenceId, userId);
 
     const commentsLeft = isPremium ? 999 : Math.max(0, LIMITS.COMMENTS_PER_DAY - (await this.checkCommentLimit(userId)));
     return { success: true, responseId, commentsLeft };
@@ -389,7 +540,7 @@ JSON uniquement : {"approved":true/false,"reason":"court","warning":true/false}`
     return { success: true, action: 'added' };
   }
 
-  // ─── Profile & Settings ──────────────────────────────────────────────────────
+  // ─── Profile + Stats ──────────────────────────────────────────────────────
 
   async getProfile(headers) {
     const userId = headers['x-user-id'];
@@ -398,7 +549,7 @@ JSON uniquement : {"approved":true/false,"reason":"court","warning":true/false}`
     const user = await this.db.execute({ sql: 'SELECT * FROM users WHERE id = ?', args: [userId] });
     if (user.rows.length === 0) return { success: false, message: 'User not found' };
 
-    const [confidences, totalReactions, totalResponses, helpedCount] = await Promise.all([
+    const [confidences, totalReactions, totalResponses, helpedCount, emotionStats, subscriptions] = await Promise.all([
       this.db.execute({
         sql: `SELECT c.id, c.content, c.emotion, c.created_at, c.expires_at,
             (SELECT COUNT(*) FROM reactions WHERE confidence_id = c.id) as reaction_count,
@@ -408,14 +559,34 @@ JSON uniquement : {"approved":true/false,"reason":"court","warning":true/false}`
       }),
       this.db.execute({ sql: 'SELECT COUNT(*) as c FROM reactions r JOIN confidences cf ON r.confidence_id = cf.id WHERE cf.user_id = ?', args: [userId] }),
       this.db.execute({ sql: 'SELECT COUNT(*) as c FROM responses r JOIN confidences cf ON r.confidence_id = cf.id WHERE cf.user_id = ?', args: [userId] }),
-      this.db.execute({ sql: `SELECT COUNT(*) as c FROM (SELECT DISTINCT confidence_id FROM reactions WHERE user_id = ? UNION SELECT DISTINCT confidence_id FROM responses WHERE user_id = ?)`, args: [userId, userId] })
+      this.db.execute({ sql: `SELECT COUNT(*) as c FROM (SELECT DISTINCT confidence_id FROM reactions WHERE user_id = ? UNION SELECT DISTINCT confidence_id FROM responses WHERE user_id = ?)`, args: [userId, userId] }),
+      this.db.execute({ sql: 'SELECT emotion, COUNT(*) as count FROM confidences WHERE user_id = ? GROUP BY emotion ORDER BY count DESC', args: [userId] }),
+      this.db.execute({ sql: 'SELECT emotion FROM subscriptions WHERE user_id = ?', args: [userId] })
     ]);
+
+    // Streak
+    const activityDays = await this.db.execute({
+      sql: `SELECT DISTINCT date(created_at/1000, 'unixepoch') as day FROM confidences WHERE user_id = ?
+            UNION SELECT DISTINCT date(created_at/1000, 'unixepoch') as day FROM responses WHERE user_id = ?
+            ORDER BY day DESC LIMIT 30`,
+      args: [userId, userId]
+    });
+    let streak = 0;
+    let checkDate = new Date().toISOString().split('T')[0];
+    for (const row of activityDays.rows) {
+      if (row.day === checkDate) {
+        streak++;
+        const d = new Date(checkDate);
+        d.setDate(d.getDate() - 1);
+        checkDate = d.toISOString().split('T')[0];
+      } else break;
+    }
 
     const isPremium = user.rows[0].premium === 1;
     const [postsThisWeek, commentsToday] = await Promise.all([this.checkPostLimit(userId), this.checkCommentLimit(userId)]);
 
     let settings = {};
-    try { settings = JSON.parse(user.rows[0].settings || '{}'); } catch { settings = { theme: 'dark', avatar: 'moon', language: 'fr' }; }
+    try { settings = JSON.parse(user.rows[0].settings || '{}'); } catch { settings = { theme: 'dark', avatar: 'moon', language: 'en' }; }
 
     return {
       success: true,
@@ -426,8 +597,11 @@ JSON uniquement : {"approved":true/false,"reason":"court","warning":true/false}`
           confidencesCount: confidences.rows.length,
           reactionsReceived: totalReactions.rows[0].c,
           responsesReceived: totalResponses.rows[0].c,
-          peopleHelped: helpedCount.rows[0].c
+          peopleHelped: helpedCount.rows[0].c,
+          streak,
+          emotionDistribution: emotionStats.rows
         },
+        subscriptions: subscriptions.rows.map(r => r.emotion),
         limits: {
           postsThisWeek,
           postLimitPerWeek: LIMITS.POST_PER_WEEK,
@@ -458,6 +632,36 @@ JSON uniquement : {"approved":true/false,"reason":"court","warning":true/false}`
     return { success: true };
   }
 
+  // ─── Journal (Premium) ───────────────────────────────────────────────────────
+
+  async createJournalEntry(data, headers) {
+    const userId = headers['x-user-id'];
+    if (!userId) return { success: false, message: 'Unauthorized' };
+    const user = await this.db.execute({ sql: 'SELECT premium FROM users WHERE id = ?', args: [userId] });
+    if (user.rows.length === 0 || user.rows[0].premium !== 1) return { success: false, message: 'Premium required', limitType: 'premium' };
+    const entryId = this.generateId('jrn');
+    await this.db.execute({
+      sql: 'INSERT INTO journal_entries (id, user_id, content, mood, created_at) VALUES (?, ?, ?, ?, ?)',
+      args: [entryId, userId, data.content, data.mood || null, Date.now()]
+    });
+    return { success: true, entryId };
+  }
+
+  async getJournalEntries(headers) {
+    const userId = headers['x-user-id'];
+    if (!userId) return { success: false, message: 'Unauthorized' };
+    const user = await this.db.execute({ sql: 'SELECT premium FROM users WHERE id = ?', args: [userId] });
+    if (user.rows.length === 0 || user.rows[0].premium !== 1) return { success: false, message: 'Premium required', limitType: 'premium' };
+    const entries = await this.db.execute({ sql: 'SELECT * FROM journal_entries WHERE user_id = ? ORDER BY created_at DESC', args: [userId] });
+    return { success: true, entries: entries.rows };
+  }
+
+  // ─── Weekly Prompt ────────────────────────────────────────────────────────
+
+  getWeeklyPromptPublic() {
+    return { success: true, prompt: this.getWeeklyPrompt() };
+  }
+
   // ─── Admin ───────────────────────────────────────────────────────────────────
 
   async getAdminStats() {
@@ -467,7 +671,7 @@ JSON uniquement : {"approved":true/false,"reason":"court","warning":true/false}`
 
     const [totalUsers, newUsersToday, newUsersWeek, premiumUsers,
            totalConf, activeConf, newConfToday, newConfWeek,
-           totalResp, newRespToday, totalReact] = await Promise.all([
+           totalResp, newRespToday, totalReact, totalNotifs] = await Promise.all([
       this.db.execute('SELECT COUNT(*) as c FROM users'),
       this.db.execute({ sql: 'SELECT COUNT(*) as c FROM users WHERE created_at > ?', args: [oneDayAgo] }),
       this.db.execute({ sql: 'SELECT COUNT(*) as c FROM users WHERE created_at > ?', args: [oneWeekAgo] }),
@@ -478,19 +682,15 @@ JSON uniquement : {"approved":true/false,"reason":"court","warning":true/false}`
       this.db.execute({ sql: 'SELECT COUNT(*) as c FROM confidences WHERE created_at > ?', args: [oneWeekAgo] }),
       this.db.execute('SELECT COUNT(*) as c FROM responses'),
       this.db.execute({ sql: 'SELECT COUNT(*) as c FROM responses WHERE created_at > ?', args: [oneDayAgo] }),
-      this.db.execute('SELECT COUNT(*) as c FROM reactions')
+      this.db.execute('SELECT COUNT(*) as c FROM reactions'),
+      this.db.execute('SELECT COUNT(*) as c FROM notifications WHERE read = 0')
     ]);
 
-    const topEmotions = await this.db.execute({
-      sql: `SELECT emotion, COUNT(*) as count FROM confidences WHERE expires_at > ? GROUP BY emotion ORDER BY count DESC`,
-      args: [now]
-    });
-
-    const dailyActivity = await this.db.execute({
-      sql: `SELECT date(created_at/1000, 'unixepoch') as day, COUNT(*) as confidences
-        FROM confidences WHERE created_at > ? GROUP BY day ORDER BY day`,
-      args: [oneWeekAgo]
-    });
+    const [topEmotions, dailyActivity, topSubscriptions] = await Promise.all([
+      this.db.execute({ sql: `SELECT emotion, COUNT(*) as count FROM confidences WHERE expires_at > ? GROUP BY emotion ORDER BY count DESC`, args: [now] }),
+      this.db.execute({ sql: `SELECT date(created_at/1000, 'unixepoch') as day, COUNT(*) as confidences FROM confidences WHERE created_at > ? GROUP BY day ORDER BY day`, args: [oneWeekAgo] }),
+      this.db.execute('SELECT emotion, COUNT(*) as count FROM subscriptions GROUP BY emotion ORDER BY count DESC')
+    ]);
 
     return {
       success: true,
@@ -499,8 +699,10 @@ JSON uniquement : {"approved":true/false,"reason":"court","warning":true/false}`
         confidences: { total: totalConf.rows[0].c, active: activeConf.rows[0].c, newToday: newConfToday.rows[0].c, newThisWeek: newConfWeek.rows[0].c },
         responses: { total: totalResp.rows[0].c, newToday: newRespToday.rows[0].c },
         reactions: { total: totalReact.rows[0].c },
+        notifications: { unread: totalNotifs.rows[0].c },
         topEmotions: topEmotions.rows,
-        dailyActivity: dailyActivity.rows
+        dailyActivity: dailyActivity.rows,
+        topSubscriptions: topSubscriptions.rows
       }
     };
   }
@@ -514,7 +716,12 @@ JSON uniquement : {"approved":true/false,"reason":"court","warning":true/false}`
       sql: 'UPDATE users SET premium = 1, premium_type = ?, premium_start = ?, premium_end = ? WHERE id = ?',
       args: [type, now, now + durationMs, userId]
     });
-    return { success: true, message: `Premium ${type} activé pour ${userId}` };
+    // Notifier l'utilisateur
+    await this.db.execute({
+      sql: 'INSERT INTO notifications (id, user_id, type, message, created_at) VALUES (?, ?, ?, ?, ?)',
+      args: [this.generateId('notif'), userId, 'premium_activated', `🎉 Your Premium ${type} subscription is now active!`, now]
+    });
+    return { success: true, message: `Premium ${type} activated for ${userId}` };
   }
 
   async deactivatePremium(userId, headers) {
@@ -525,19 +732,17 @@ JSON uniquement : {"approved":true/false,"reason":"court","warning":true/false}`
   }
 
   async getPremiumRequests() {
-    // Pour le dashboard admin - liste les users récents non-premium pour gestion manuelle
-    const result = await this.db.execute({
-      sql: 'SELECT id, created_at, last_active, premium, premium_type, premium_end FROM users ORDER BY created_at DESC LIMIT 100',
-      args: []
-    });
-    return { success: true, users: result.rows };
+    const r = await this.db.execute({ sql: 'SELECT id, created_at, last_active, premium, premium_type, premium_end FROM users ORDER BY created_at DESC LIMIT 100', args: [] });
+    return { success: true, users: r.rows };
   }
 
-  // ─── Maintenance ─────────────────────────────────────────────────────────────
+  // ─── Maintenance ──────────────────────────────────────────────────────────
 
   async cleanExpiredConfidences() {
     await this.db.execute({ sql: 'DELETE FROM confidences WHERE expires_at < ?', args: [Date.now()] });
-    console.log('🧹 Expired confidences cleaned');
+    // Nettoyer les notifs lues de plus de 30 jours
+    await this.db.execute({ sql: 'DELETE FROM notifications WHERE read = 1 AND created_at < ?', args: [Date.now() - 30 * 86400000] });
+    console.log('🧹 Cleanup done');
   }
 
   async healthCheck() {
