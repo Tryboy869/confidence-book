@@ -12,7 +12,6 @@ const PORT = process.env.PORT || 3000;
 app.use(express.json({ limit: '10mb' }));
 app.use(express.static(__dirname));
 
-// ─── Security Logger (in-memory, Render compatible) ──────────────────────────
 class SecurityLogger {
   constructor() {
     this.logs = [];
@@ -20,60 +19,36 @@ class SecurityLogger {
     this.rateLimits = new Map();
     this.blockedIPs = new Set();
   }
-
   log(level, type, data) {
     const entry = { timestamp: new Date().toISOString(), level, type, ...data };
     this.logs.push(entry);
     if (this.logs.length > this.maxLogs) this.logs.shift();
-    if (level === 'ERROR' || level === 'SECURITY') {
-      console.error(`[${level}] [${type}]`, JSON.stringify(data));
-    } else if (level !== 'INFO') {
-      console.log(`[${level}] [${type}]`, JSON.stringify(data));
-    }
+    if (level === 'ERROR' || level === 'SECURITY') console.error(`[${level}] [${type}]`, JSON.stringify(data));
   }
-
-  info(type, data) { this.log('INFO', type, data); }
-  warn(type, data) { this.log('WARN', type, data); }
-  error(type, data) { this.log('ERROR', type, data); }
-  security(type, data) { this.log('SECURITY', type, data); }
-
-  checkRateLimit(identifier, limit = 100, windowMs = 15 * 60 * 1000) {
+  info(t, d) { this.log('INFO', t, d); }
+  warn(t, d) { this.log('WARN', t, d); }
+  error(t, d) { this.log('ERROR', t, d); }
+  security(t, d) { this.log('SECURITY', t, d); }
+  checkRateLimit(id, limit = 100, windowMs = 900000) {
     const now = Date.now();
-    if (!this.rateLimits.has(identifier)) this.rateLimits.set(identifier, []);
-    const requests = this.rateLimits.get(identifier).filter(t => now - t < windowMs);
-    if (requests.length >= limit) {
-      this.security('RATE_LIMIT', { identifier, requests: requests.length, limit });
-      return false;
-    }
-    requests.push(now);
-    this.rateLimits.set(identifier, requests);
-    return true;
+    if (!this.rateLimits.has(id)) this.rateLimits.set(id, []);
+    const reqs = this.rateLimits.get(id).filter(t => now - t < windowMs);
+    if (reqs.length >= limit) return false;
+    reqs.push(now); this.rateLimits.set(id, reqs); return true;
   }
-
-  detectSQLInjection(input) {
-    return /(\b(SELECT|INSERT|UPDATE|DELETE|DROP|CREATE|EXEC|UNION)\b|--|#|\/\*)/i.test(input);
-  }
-
-  detectXSS(input) {
-    return /<script|javascript:|on\w+\s*=|<iframe/gi.test(input);
-  }
-
+  detectSQLInjection(s) { return /(\b(SELECT|INSERT|UPDATE|DELETE|DROP|CREATE|EXEC|UNION)\b|--|#|\/\*)/i.test(s); }
+  detectXSS(s) { return /<script|javascript:|on\w+\s*=|<iframe/gi.test(s); }
   validateRequest(req) {
     const ip = req.ip || req.connection.remoteAddress;
     if (this.blockedIPs.has(ip)) return { valid: false, reason: 'IP blocked' };
     if (!this.checkRateLimit(ip)) return { valid: false, reason: 'Rate limit exceeded' };
-
     if (req.body) {
-      const body = JSON.stringify(req.body);
-      if (body.length > 10 * 1024 * 1024) return { valid: false, reason: 'Payload too large' };
       const check = (obj) => {
         for (const [k, v] of Object.entries(obj)) {
           if (typeof v === 'string') {
-            if (this.detectSQLInjection(v)) { this.security('SQL_INJECTION', { ip, field: k }); return false; }
-            if (this.detectXSS(v)) { this.security('XSS_ATTEMPT', { ip, field: k }); return false; }
-          } else if (typeof v === 'object' && v !== null) {
-            if (!check(v)) return false;
-          }
+            if (this.detectSQLInjection(v)) { this.security('SQL_INJECTION', { ip, k }); return false; }
+            if (this.detectXSS(v)) { this.security('XSS', { ip, k }); return false; }
+          } else if (typeof v === 'object' && v !== null && !check(v)) return false;
         }
         return true;
       };
@@ -81,205 +56,110 @@ class SecurityLogger {
     }
     return { valid: true };
   }
-
   blockIP(ip, reason) {
-    this.blockedIPs.add(ip);
-    this.security('IP_BLOCKED', { ip, reason });
-    setTimeout(() => this.blockedIPs.delete(ip), 24 * 60 * 60 * 1000);
+    this.blockedIPs.add(ip); this.security('IP_BLOCKED', { ip, reason });
+    setTimeout(() => this.blockedIPs.delete(ip), 86400000);
   }
-
-  getStats() {
-    const last24h = Date.now() - 86400000;
-    const recent = this.logs.filter(l => new Date(l.timestamp) > last24h);
-    return {
-      total: recent.length,
-      byLevel: { INFO: recent.filter(l => l.level === 'INFO').length, WARN: recent.filter(l => l.level === 'WARN').length, ERROR: recent.filter(l => l.level === 'ERROR').length, SECURITY: recent.filter(l => l.level === 'SECURITY').length },
-      blockedIPs: Array.from(this.blockedIPs)
-    };
-  }
-
   getRecentLogs(limit = 200) { return this.logs.slice(-limit).reverse(); }
+  getStats() {
+    const r = this.logs.filter(l => new Date(l.timestamp) > Date.now() - 86400000);
+    return { total: r.length, errors: r.filter(l => l.level === 'ERROR').length, security: r.filter(l => l.level === 'SECURITY').length, blockedIPs: Array.from(this.blockedIPs) };
+  }
 }
 
 const logger = new SecurityLogger();
 
-// Middleware sécurité
 app.use((req, res, next) => {
-  const ip = req.ip || req.connection.remoteAddress;
-  const userId = req.headers['x-user-id'] || 'anonymous';
-  const validation = logger.validateRequest(req);
-
-  if (!validation.valid) {
-    logger.security('REQUEST_BLOCKED', { ip, userId, method: req.method, path: req.path, reason: validation.reason });
-    return res.status(403).json({ success: false, message: 'Request blocked' });
-  }
+  const v = logger.validateRequest(req);
+  if (!v.valid) return res.status(403).json({ success: false, message: 'Request blocked' });
   next();
 });
 
 let backend;
-
 async function initBackend() {
-  try {
-    backend = new BackendService();
-    await backend.init();
-    console.log('✅ Backend ready');
-    setInterval(() => backend.cleanExpiredConfidences(), 24 * 60 * 60 * 1000);
-  } catch (err) {
-    console.error('❌ Backend init failed:', err);
-    throw err;
-  }
+  backend = new BackendService();
+  await backend.init();
+  console.log('✅ Backend ready');
+  setInterval(() => backend.cleanExpiredConfidences(), 86400000);
 }
 
-// ─── Routes statiques ────────────────────────────────────────────────────────
-app.get('/', (req, res) => res.sendFile(path.join(__dirname, 'welcome.html')));
-
-// ─── Auth ────────────────────────────────────────────────────────────────────
-app.post('/api/auth/create', async (req, res) => {
-  try { res.json(await backend.createUser(req.body.secretPhrase)); }
+const h = fn => async (req, res) => {
+  try { res.json(await fn(req)); }
   catch (e) { res.status(500).json({ success: false, message: e.message }); }
-});
+};
 
-app.post('/api/auth/verify', async (req, res) => {
-  try { res.json(await backend.verifyUser(req.body.input)); }
-  catch (e) { res.status(500).json({ success: false, message: e.message }); }
-});
-
-// ─── Confidences ─────────────────────────────────────────────────────────────
-app.get('/api/confidences', async (req, res) => {
-  try {
-    const page = parseInt(req.query.page) || 1;
-    const pageSize = parseInt(req.query.pageSize) || 20;
-    res.json(await backend.getConfidences(req.query.chapter, req.headers['x-user-id'], page, pageSize));
-  } catch (e) { res.status(500).json({ success: false, message: e.message }); }
-});
-
-app.get('/api/confidences/:id', async (req, res) => {
-  try { res.json(await backend.getConfidence(req.params.id, req.headers['x-user-id'])); }
-  catch (e) { res.status(500).json({ success: false, message: e.message }); }
-});
-
-app.post('/api/confidences', async (req, res) => {
-  try { res.json(await backend.createConfidence(req.body, req.headers)); }
-  catch (e) { res.status(500).json({ success: false, message: e.message }); }
-});
-
-app.put('/api/confidences/:id', async (req, res) => {
-  try { res.json(await backend.updateConfidence(req.params.id, req.body, req.headers)); }
-  catch (e) { res.status(500).json({ success: false, message: e.message }); }
-});
-
-app.delete('/api/confidences/:id', async (req, res) => {
-  try { res.json(await backend.deleteConfidence(req.params.id, req.headers)); }
-  catch (e) { res.status(500).json({ success: false, message: e.message }); }
-});
-
-// ─── Reactions & Responses ───────────────────────────────────────────────────
-app.post('/api/reactions', async (req, res) => {
-  try { res.json(await backend.toggleReaction(req.body, req.headers)); }
-  catch (e) { res.status(500).json({ success: false, message: e.message }); }
-});
-
-app.post('/api/response-reactions', async (req, res) => {
-  try { res.json(await backend.toggleResponseReaction(req.body, req.headers)); }
-  catch (e) { res.status(500).json({ success: false, message: e.message }); }
-});
-
-app.post('/api/responses', async (req, res) => {
-  try { res.json(await backend.createResponse(req.body, req.headers)); }
-  catch (e) { res.status(500).json({ success: false, message: e.message }); }
-});
-
-// ─── Profile & Settings ──────────────────────────────────────────────────────
-app.get('/api/profile', async (req, res) => {
-  try { res.json(await backend.getProfile(req.headers)); }
-  catch (e) { res.status(500).json({ success: false, message: e.message }); }
-});
-
-app.put('/api/settings', async (req, res) => {
-  try { res.json(await backend.updateSettings(req.body, req.headers)); }
-  catch (e) { res.status(500).json({ success: false, message: e.message }); }
-});
-
-app.delete('/api/account', async (req, res) => {
-  try { res.json(await backend.deleteAccount(req.headers)); }
-  catch (e) { res.status(500).json({ success: false, message: e.message }); }
-});
-
-// ─── Admin ───────────────────────────────────────────────────────────────────
 function adminAuth(req, res, next) {
   if (req.headers['x-admin-key'] !== process.env.ADMIN_KEY) {
-    logger.security('UNAUTHORIZED_ADMIN', { ip: req.ip, path: req.path });
+    logger.security('UNAUTHORIZED_ADMIN', { ip: req.ip });
     return res.status(403).json({ success: false, message: 'Unauthorized' });
   }
   next();
 }
 
-app.get('/api/admin/stats', adminAuth, async (req, res) => {
-  try { res.json(await backend.getAdminStats()); }
-  catch (e) { res.status(500).json({ success: false, message: e.message }); }
-});
+// Static
+app.get('/', (req, res) => res.sendFile(path.join(__dirname, 'welcome.html')));
 
-app.get('/api/admin/users', adminAuth, async (req, res) => {
-  try { res.json(await backend.getPremiumRequests()); }
-  catch (e) { res.status(500).json({ success: false, message: e.message }); }
-});
+// Auth
+app.post('/api/auth/create', h(req => backend.createUser(req.body.secretPhrase)));
+app.post('/api/auth/verify', h(req => backend.verifyUser(req.body.input)));
 
-// Activer le premium manuellement depuis le dashboard admin
-app.post('/api/admin/premium/activate', adminAuth, async (req, res) => {
-  try {
-    const { userId, type } = req.body; // type: 'monthly' | 'yearly'
-    if (!userId || !type) return res.status(400).json({ success: false, message: 'userId and type required' });
-    res.json(await backend.activatePremium(userId, type, req.headers));
-  } catch (e) { res.status(500).json({ success: false, message: e.message }); }
-});
+// Weekly prompt
+app.get('/api/prompt', (req, res) => res.json(backend.getWeeklyPromptPublic()));
 
-app.post('/api/admin/premium/deactivate', adminAuth, async (req, res) => {
-  try {
-    const { userId } = req.body;
-    if (!userId) return res.status(400).json({ success: false, message: 'userId required' });
-    res.json(await backend.deactivatePremium(userId, req.headers));
-  } catch (e) { res.status(500).json({ success: false, message: e.message }); }
-});
+// Subscriptions
+app.get('/api/subscriptions', h(req => backend.getSubscriptions(req.headers)));
+app.post('/api/subscriptions/toggle', h(req => backend.toggleSubscription(req.body, req.headers)));
 
-app.get('/api/admin/logs', adminAuth, (req, res) => {
-  res.json({ success: true, logs: logger.getRecentLogs(200) });
-});
+// Notifications
+app.get('/api/notifications', h(req => backend.getNotifications(req.headers)));
+app.post('/api/notifications/read', h(req => backend.markNotificationsRead(req.headers)));
 
-app.post('/api/admin/block-ip', adminAuth, (req, res) => {
-  const { ip, reason } = req.body;
-  logger.blockIP(ip, reason);
-  res.json({ success: true, message: `IP ${ip} blocked` });
-});
+// Confidences
+app.get('/api/confidences', h(req => backend.getConfidences(req.query.chapter, req.headers['x-user-id'], parseInt(req.query.page) || 1, parseInt(req.query.pageSize) || 20)));
+app.get('/api/confidences/:id', h(req => backend.getConfidence(req.params.id, req.headers['x-user-id'])));
+app.post('/api/confidences', h(req => backend.createConfidence(req.body, req.headers)));
+app.put('/api/confidences/:id', h(req => backend.updateConfidence(req.params.id, req.body, req.headers)));
+app.delete('/api/confidences/:id', h(req => backend.deleteConfidence(req.params.id, req.headers)));
 
-// ─── Health ──────────────────────────────────────────────────────────────────
-app.get('/api/health', async (req, res) => {
-  try { res.json(await backend.healthCheck()); }
-  catch (e) { res.status(500).json({ success: false, status: 'unhealthy' }); }
-});
+// Reactions & Responses
+app.post('/api/reactions', h(req => backend.toggleReaction(req.body, req.headers)));
+app.post('/api/response-reactions', h(req => backend.toggleResponseReaction(req.body, req.headers)));
+app.post('/api/responses', h(req => backend.createResponse(req.body, req.headers)));
 
-// ─── Error handlers ──────────────────────────────────────────────────────────
-app.use((err, req, res, next) => {
-  logger.error('UNHANDLED_ERROR', { error: err.message, path: req.path });
-  res.status(500).json({ success: false, message: 'Internal server error' });
-});
+// Profile & Settings
+app.get('/api/profile', h(req => backend.getProfile(req.headers)));
+app.put('/api/settings', h(req => backend.updateSettings(req.body, req.headers)));
+app.delete('/api/account', h(req => backend.deleteAccount(req.headers)));
 
-app.use((req, res) => {
-  res.status(404).json({ success: false, message: 'Route not found' });
-});
+// Journal (Premium)
+app.get('/api/journal', h(req => backend.getJournalEntries(req.headers)));
+app.post('/api/journal', h(req => backend.createJournalEntry(req.body, req.headers)));
 
-async function startServer() {
-  await initBackend();
+// Admin
+app.get('/api/admin/stats', adminAuth, h(req => backend.getAdminStats()));
+app.get('/api/admin/users', adminAuth, h(req => backend.getPremiumRequests()));
+app.post('/api/admin/premium/activate', adminAuth, h(req => backend.activatePremium(req.body.userId, req.body.type, req.headers)));
+app.post('/api/admin/premium/deactivate', adminAuth, h(req => backend.deactivatePremium(req.body.userId, req.headers)));
+app.get('/api/admin/logs', adminAuth, (req, res) => res.json({ success: true, logs: logger.getRecentLogs() }));
+app.post('/api/admin/block-ip', adminAuth, (req, res) => { logger.blockIP(req.body.ip, req.body.reason); res.json({ success: true }); });
+
+// Health
+app.get('/api/health', h(req => backend.healthCheck()));
+
+// Errors
+app.use((err, req, res, next) => { logger.error('UNHANDLED', { error: err.message }); res.status(500).json({ success: false, message: 'Internal server error' }); });
+app.use((req, res) => res.status(404).json({ success: false, message: 'Route not found' }));
+
+initBackend().then(() => {
   app.listen(PORT, '0.0.0.0', () => {
     console.log(`
 =============================================================
   CONFIDENCE BOOK API — port ${PORT}
-  Logs : console (Render compatible)
-  Admin : POST /api/admin/premium/activate
+  Routes: auth, confidences, reactions, responses,
+          subscriptions, notifications, journal, admin
 =============================================================`);
   });
-}
+}).catch(err => { console.error('Fatal:', err); process.exit(1); });
 
-process.on('SIGTERM', () => { console.log('SIGTERM received'); process.exit(0); });
-process.on('SIGINT', () => { console.log('SIGINT received'); process.exit(0); });
-
-startServer();
+process.on('SIGTERM', () => process.exit(0));
+process.on('SIGINT', () => process.exit(0));
