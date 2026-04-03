@@ -10,75 +10,26 @@
   <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
   <style>
     * { font-family: 'DM Sans', sans-serif; box-sizing: border-box; }
-    /* Dark only — thème clair supprimé */
     body { background: #0f0e17; color: #fffffe; min-height: 100vh; }
-
-    .card { background: #1a1825; border: 1px solid #2d2a3e; border-radius: 20px; }
-
-    .app-header {
-      background: #1a182590; backdrop-filter: blur(12px);
-      border-bottom: 1px solid #2d2a3e;
-      position: sticky; top: 0; z-index: 30;
-    }
-
-    .section-title { font-size: 0.75rem; font-weight: 700; color: #6b7280; text-transform: uppercase; letter-spacing: 0.08em; margin-bottom: 12px; }
-
-    .option-btn {
-      flex: 1; padding: 12px; border-radius: 12px;
-      border: 2px solid #2d2a3e; background: transparent;
-      color: #9ca3af; font-weight: 600; font-size: 0.9rem;
-      cursor: pointer; transition: all 0.2s;
-    }
+    .app-header { background: #1a182590; backdrop-filter: blur(12px); border-bottom: 1px solid #2d2a3e; position: sticky; top: 0; z-index: 30; }
+    .card { background: #1a1825; border: 1px solid #2d2a3e; border-radius: 20px; padding: 20px; }
+    .section-title { font-size: 0.72rem; font-weight: 700; color: #6b7280; text-transform: uppercase; letter-spacing: 0.08em; margin-bottom: 12px; }
+    .option-btn { flex: 1; padding: 12px; border-radius: 12px; border: 2px solid #2d2a3e; background: transparent; color: #9ca3af; font-weight: 600; font-size: 0.9rem; cursor: pointer; transition: all 0.2s; }
     .option-btn:hover { border-color: #7c3aed50; color: #a78bfa; }
     .option-btn.active { border-color: #7c3aed; background: #7c3aed20; color: #a78bfa; }
-
-    .avatar-btn {
-      padding: 12px; border-radius: 12px;
-      border: 2px solid #2d2a3e; background: transparent;
-      cursor: pointer; transition: all 0.2s; display: flex;
-      align-items: center; justify-content: center;
-    }
+    .avatar-btn { padding: 12px; border-radius: 12px; border: 2px solid #2d2a3e; background: transparent; cursor: pointer; transition: all 0.2s; display: flex; align-items: center; justify-content: center; }
     .avatar-btn:hover { border-color: #7c3aed50; }
     .avatar-btn.active { border-color: #7c3aed; background: #7c3aed20; }
-
-    .id-display {
-      font-family: 'Courier New', monospace; font-size: 0.9rem;
-      background: #0f0e17; border: 1px solid #2d2a3e;
-      border-radius: 12px; padding: 14px 16px; color: #a78bfa;
-      word-break: break-all; flex: 1;
-    }
-
-    .copy-btn {
-      padding: 14px 16px; background: #7c3aed; color: white;
-      border: none; border-radius: 12px; cursor: pointer; transition: all 0.2s;
-    }
+    .id-display { font-family: 'Courier New', monospace; font-size: 0.88rem; background: #0f0e17; border: 1px solid #2d2a3e; border-radius: 12px; padding: 14px 16px; color: #a78bfa; word-break: break-all; flex: 1; }
+    .copy-btn { padding: 14px 16px; background: #7c3aed; color: white; border: none; border-radius: 12px; cursor: pointer; transition: all 0.2s; flex-shrink: 0; }
     .copy-btn:hover { background: #6d28d9; }
     .copy-btn.copied { background: #10b981; }
-
-    .btn-danger {
-      width: 100%; padding: 14px; border-radius: 12px;
-      background: #ef444415; border: 1px solid #ef444430;
-      color: #ef4444; font-weight: 600; cursor: pointer; transition: all 0.2s;
-      display: flex; align-items: center; justify-content: center; gap: 8px;
-    }
-    .btn-danger:hover { background: #ef444425; }
-
-    .btn-logout {
-      width: 100%; padding: 14px; border-radius: 12px;
-      background: #7c3aed20; border: 1px solid #7c3aed30;
-      color: #a78bfa; font-weight: 600; cursor: pointer; transition: all 0.2s;
-      display: flex; align-items: center; justify-content: center; gap: 8px;
-    }
+    .btn-logout { width: 100%; padding: 14px; border-radius: 12px; background: #7c3aed20; border: 1px solid #7c3aed30; color: #a78bfa; font-weight: 600; cursor: pointer; transition: all 0.2s; display: flex; align-items: center; justify-content: center; gap: 8px; }
     .btn-logout:hover { background: #7c3aed30; }
-
-    .toast {
-      position: fixed; bottom: 24px; left: 50%; transform: translateX(-50%) translateY(20px);
-      background: #10b981; color: white; font-weight: 600; font-size: 0.9rem;
-      padding: 12px 24px; border-radius: 12px; opacity: 0;
-      transition: all 0.3s; z-index: 100; pointer-events: none;
-    }
+    .btn-danger { width: 100%; padding: 14px; border-radius: 12px; background: #ef444415; border: 1px solid #ef444430; color: #ef4444; font-weight: 600; cursor: pointer; transition: all 0.2s; display: flex; align-items: center; justify-content: center; gap: 8px; }
+    .btn-danger:hover { background: #ef444425; }
+    .toast { position: fixed; bottom: 24px; left: 50%; transform: translateX(-50%) translateY(20px); background: #10b981; color: white; font-weight: 600; font-size: 0.9rem; padding: 12px 24px; border-radius: 12px; opacity: 0; transition: all 0.3s; z-index: 100; pointer-events: none; white-space: nowrap; }
     .toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
-
     ::-webkit-scrollbar { width: 6px; }
     ::-webkit-scrollbar-thumb { background: #3d3a4e; border-radius: 3px; }
   </style>
@@ -90,15 +41,15 @@
       <button onclick="location.href='/feed.html'" class="p-2 rounded-xl hover:bg-purple-400/10 transition">
         <i data-lucide="arrow-left" class="w-5 h-5 text-purple-400"></i>
       </button>
-      <span class="font-bold text-lg">Settings</span>
+      <span class="font-bold text-lg" data-i18n="settings.title">Settings</span>
     </div>
   </header>
 
   <div class="max-w-xl mx-auto px-4 py-6 space-y-4">
 
-    <!-- Language -->
-    <div class="card p-5">
-      <p class="section-title">Language</p>
+    <!-- Language — INSTANT, no reload -->
+    <div class="card">
+      <p class="section-title" data-i18n="settings.language_title">Language</p>
       <div class="flex gap-3">
         <button onclick="selectLanguage('en')" id="lang-en-btn" class="option-btn active">🇬🇧 English</button>
         <button onclick="selectLanguage('fr')" id="lang-fr-btn" class="option-btn">🇫🇷 Français</button>
@@ -106,9 +57,9 @@
     </div>
 
     <!-- Avatar -->
-    <div class="card p-5">
-      <p class="section-title">Avatar</p>
-      <p class="text-xs text-gray-500 mb-4">Your anonymous identity icon</p>
+    <div class="card">
+      <p class="section-title" data-i18n="settings.avatar_title">Avatar</p>
+      <p class="text-xs text-gray-500 mb-4" data-i18n="settings.avatar_description">Your anonymous identity icon</p>
       <div class="grid grid-cols-4 gap-3">
         <button onclick="selectAvatar('moon')" class="avatar-btn" data-avatar="moon"><span class="text-2xl">🌙</span></button>
         <button onclick="selectAvatar('sun')" class="avatar-btn" data-avatar="sun"><span class="text-2xl">☀️</span></button>
@@ -122,9 +73,9 @@
     </div>
 
     <!-- My ID -->
-    <div class="card p-5">
-      <p class="section-title">My anonymous ID</p>
-      <p class="text-xs text-gray-500 mb-3">Keep this safe — it's the only way to recover your account.</p>
+    <div class="card">
+      <p class="section-title" data-i18n="settings.my_id">My Anonymous ID</p>
+      <p class="text-xs text-gray-500 mb-3" data-i18n="settings.my_id_help">Keep this safe — it's the only way to recover your account.</p>
       <div class="flex gap-2">
         <div class="id-display" id="user-id-display"></div>
         <button onclick="copyId()" id="copy-btn" class="copy-btn">
@@ -134,23 +85,22 @@
     </div>
 
     <!-- Account -->
-    <div class="card p-5 space-y-3">
+    <div class="card space-y-3">
       <p class="section-title">Account</p>
       <button onclick="logout()" class="btn-logout">
         <i data-lucide="log-out" class="w-5 h-5"></i>
-        Log out
+        <span data-i18n="settings.logout">Log out</span>
       </button>
       <button onclick="deleteAccount()" class="btn-danger">
         <i data-lucide="trash-2" class="w-5 h-5"></i>
-        Delete my account
+        <span data-i18n="settings.delete_account">Delete my account</span>
       </button>
     </div>
 
-    <!-- Version -->
-    <p class="text-center text-xs text-gray-600 pb-4">Confidence Book · Dark mode only · Your data stays yours</p>
+    <p class="text-center text-xs text-gray-600 pb-4">Confidence Book · Dark mode · Anonymous forever</p>
   </div>
 
-  <div id="toast" class="toast">✓ Saved</div>
+  <div id="toast" class="toast"></div>
 
   <script>
     const userId = localStorage.getItem('confidenceBookUserID');
@@ -158,11 +108,11 @@
 
     document.getElementById('user-id-display').textContent = userId;
 
-    // Settings en mémoire — dark theme uniquement
+    // Settings state
     let currentSettings = {
-      theme: 'dark', // fixe, dark only
+      theme: 'dark',
       avatar: localStorage.getItem('confidenceBookAvatar') || 'moon',
-      language: localStorage.getItem('confidenceBookLanguage') || 'en'
+      language: getCurrentLanguage()
     };
 
     // ── Init ──────────────────────────────────────────────────────────────────
@@ -173,30 +123,28 @@
         const data = await res.json();
         if (data.success && data.profile.settings) {
           const s = data.profile.settings;
-          // CORRECTION : on ne laisse pas la DB écraser le localStorage pour la langue
-          // La source de vérité pour la langue c'est localStorage
-          currentSettings.avatar = s.avatar || currentSettings.avatar;
-          // On sync le localStorage avec ce qu'on a reçu seulement si localStorage est vide
-          if (!localStorage.getItem('confidenceBookLanguage') && s.language) {
-            currentSettings.language = s.language;
-            localStorage.setItem('confidenceBookLanguage', s.language);
-          }
+          // Avatar sync : DB wins only if localStorage is empty
           if (!localStorage.getItem('confidenceBookAvatar') && s.avatar) {
             currentSettings.avatar = s.avatar;
             localStorage.setItem('confidenceBookAvatar', s.avatar);
+          } else {
+            currentSettings.avatar = localStorage.getItem('confidenceBookAvatar') || 'moon';
           }
+          // Language : localStorage ALWAYS wins — DB never overwrites user choice
+          currentSettings.language = getCurrentLanguage();
         }
       } catch (e) {}
       applyUI();
     }
 
     function applyUI() {
-      // Langue
       const lang = currentSettings.language;
+
+      // Language buttons
       document.getElementById('lang-en-btn').classList.toggle('active', lang === 'en');
       document.getElementById('lang-fr-btn').classList.toggle('active', lang === 'fr');
 
-      // Avatar
+      // Avatar buttons
       document.querySelectorAll('.avatar-btn').forEach(btn => {
         btn.classList.toggle('active', btn.dataset.avatar === currentSettings.avatar);
       });
@@ -204,18 +152,19 @@
       lucide.createIcons();
     }
 
-    // ── Language ──────────────────────────────────────────────────────────────
+    // ── Language — INSTANT, no reload ─────────────────────────────────────────
 
     function selectLanguage(lang) {
       currentSettings.language = lang;
-      // CORRECTION : sauvegarder en localStorage D'ABORD
+      // 1. Save to localStorage immediately
       localStorage.setItem('confidenceBookLanguage', lang);
+      // 2. Apply translations to DOM instantly — no reload
+      applyTranslations(lang);
+      // 3. Update button states
       applyUI();
+      // 4. Save to DB in background
       saveSettings();
-      showToast(lang === 'fr' ? 'Langue : Français' : 'Language: English');
-      // Recharger la page pour appliquer la langue — le localStorage est déjà mis à jour
-      // donc au rechargement la bonne langue sera lue
-      setTimeout(() => location.reload(), 600);
+      showToast(t('settings.saved'));
     }
 
     // ── Avatar ────────────────────────────────────────────────────────────────
@@ -225,7 +174,7 @@
       localStorage.setItem('confidenceBookAvatar', avatar);
       applyUI();
       saveSettings();
-      showToast('Avatar updated');
+      showToast(t('settings.saved'));
     }
 
     // ── Save to DB ────────────────────────────────────────────────────────────
@@ -248,7 +197,7 @@
         btn.classList.add('copied');
         btn.innerHTML = '<i data-lucide="check" class="w-5 h-5"></i>';
         lucide.createIcons();
-        showToast('ID copied!');
+        showToast(t('common.copied'));
         setTimeout(() => {
           btn.classList.remove('copied');
           btn.innerHTML = '<i data-lucide="copy" class="w-5 h-5"></i>';
@@ -265,14 +214,14 @@
     }
 
     function deleteAccount() {
-      if (!confirm('Are you sure? This action is permanent and cannot be undone.')) return;
+      if (!confirm(t('settings.delete_confirm'))) return;
       fetch('/api/account', {
         method: 'DELETE',
         headers: { 'X-User-ID': userId }
       }).then(() => {
         localStorage.clear();
         location.href = '/welcome.html';
-      }).catch(() => alert('Error. Please try again.'));
+      }).catch(() => alert(t('common.error')));
     }
 
     // ── Toast ─────────────────────────────────────────────────────────────────
@@ -284,7 +233,7 @@
       setTimeout(() => toast.classList.remove('show'), 2000);
     }
 
-    // ── Init ──────────────────────────────────────────────────────────────────
+    // ── Start ─────────────────────────────────────────────────────────────────
     loadSettings();
     lucide.createIcons();
   </script>
