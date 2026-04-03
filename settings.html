@@ -1,219 +1,263 @@
 <!DOCTYPE html>
-<html lang="fr">
+<html lang="en">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>💜</text></svg>">
-  <title>Settings - Confidence Book</title>
+  <title>Settings — Confidence Book</title>
   <script src="https://cdn.tailwindcss.com"></script>
   <script src="https://unpkg.com/lucide@latest"></script>
   <script src="/assets/translations.js"></script>
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
   <style>
-    body.dark { background: #0a0a0f; color: #e8e8f0; }
-    body.light { background: #f8f9fa; color: #1f2937; }
-    .card-dark { background: #1a1a24; }
-    .card-light { background: #ffffff; }
-    ::-webkit-scrollbar { width: 8px; }
-    ::-webkit-scrollbar-track { background: #f1f1f1; }
-    ::-webkit-scrollbar-thumb { background: #d1d5db; border-radius: 4px; }
+    * { font-family: 'DM Sans', sans-serif; box-sizing: border-box; }
+    /* Dark only — thème clair supprimé */
+    body { background: #0f0e17; color: #fffffe; min-height: 100vh; }
+
+    .card { background: #1a1825; border: 1px solid #2d2a3e; border-radius: 20px; }
+
+    .app-header {
+      background: #1a182590; backdrop-filter: blur(12px);
+      border-bottom: 1px solid #2d2a3e;
+      position: sticky; top: 0; z-index: 30;
+    }
+
+    .section-title { font-size: 0.75rem; font-weight: 700; color: #6b7280; text-transform: uppercase; letter-spacing: 0.08em; margin-bottom: 12px; }
+
+    .option-btn {
+      flex: 1; padding: 12px; border-radius: 12px;
+      border: 2px solid #2d2a3e; background: transparent;
+      color: #9ca3af; font-weight: 600; font-size: 0.9rem;
+      cursor: pointer; transition: all 0.2s;
+    }
+    .option-btn:hover { border-color: #7c3aed50; color: #a78bfa; }
+    .option-btn.active { border-color: #7c3aed; background: #7c3aed20; color: #a78bfa; }
+
+    .avatar-btn {
+      padding: 12px; border-radius: 12px;
+      border: 2px solid #2d2a3e; background: transparent;
+      cursor: pointer; transition: all 0.2s; display: flex;
+      align-items: center; justify-content: center;
+    }
+    .avatar-btn:hover { border-color: #7c3aed50; }
+    .avatar-btn.active { border-color: #7c3aed; background: #7c3aed20; }
+
+    .id-display {
+      font-family: 'Courier New', monospace; font-size: 0.9rem;
+      background: #0f0e17; border: 1px solid #2d2a3e;
+      border-radius: 12px; padding: 14px 16px; color: #a78bfa;
+      word-break: break-all; flex: 1;
+    }
+
+    .copy-btn {
+      padding: 14px 16px; background: #7c3aed; color: white;
+      border: none; border-radius: 12px; cursor: pointer; transition: all 0.2s;
+    }
+    .copy-btn:hover { background: #6d28d9; }
+    .copy-btn.copied { background: #10b981; }
+
+    .btn-danger {
+      width: 100%; padding: 14px; border-radius: 12px;
+      background: #ef444415; border: 1px solid #ef444430;
+      color: #ef4444; font-weight: 600; cursor: pointer; transition: all 0.2s;
+      display: flex; align-items: center; justify-content: center; gap: 8px;
+    }
+    .btn-danger:hover { background: #ef444425; }
+
+    .btn-logout {
+      width: 100%; padding: 14px; border-radius: 12px;
+      background: #7c3aed20; border: 1px solid #7c3aed30;
+      color: #a78bfa; font-weight: 600; cursor: pointer; transition: all 0.2s;
+      display: flex; align-items: center; justify-content: center; gap: 8px;
+    }
+    .btn-logout:hover { background: #7c3aed30; }
+
+    .toast {
+      position: fixed; bottom: 24px; left: 50%; transform: translateX(-50%) translateY(20px);
+      background: #10b981; color: white; font-weight: 600; font-size: 0.9rem;
+      padding: 12px 24px; border-radius: 12px; opacity: 0;
+      transition: all 0.3s; z-index: 100; pointer-events: none;
+    }
+    .toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+
+    ::-webkit-scrollbar { width: 6px; }
+    ::-webkit-scrollbar-thumb { background: #3d3a4e; border-radius: 3px; }
   </style>
 </head>
-<body class="dark p-6">
-  <div class="max-w-2xl mx-auto">
-    <button onclick="location.href='/feed.html'" class="flex items-center gap-2 text-purple-400 hover:text-purple-300 mb-6 transition">
-      <i data-lucide="arrow-left" class="w-5 h-5"></i>
-      <span id="back-btn">Retour</span>
-    </button>
+<body>
 
-    <div class="card-dark rounded-2xl p-6 mb-6">
-      <h1 class="text-2xl font-bold mb-6" id="page-title"></h1>
+  <header class="app-header">
+    <div class="max-w-xl mx-auto px-4 py-4 flex items-center gap-3">
+      <button onclick="location.href='/feed.html'" class="p-2 rounded-xl hover:bg-purple-400/10 transition">
+        <i data-lucide="arrow-left" class="w-5 h-5 text-purple-400"></i>
+      </button>
+      <span class="font-bold text-lg">Settings</span>
+    </div>
+  </header>
 
-      <div class="space-y-6">
-        <div>
-          <h3 class="font-bold mb-3" id="theme-title"></h3>
-          <div class="flex gap-3">
-            <button onclick="setTheme('light')" id="theme-light-btn" class="flex-1 px-4 py-3 rounded-lg border-2 transition">
-              <i data-lucide="sun" class="w-5 h-5 mx-auto mb-1"></i>
-              <div class="text-sm" id="theme-light"></div>
-            </button>
-            <button onclick="setTheme('dark')" id="theme-dark-btn" class="flex-1 px-4 py-3 rounded-lg border-2 transition">
-              <i data-lucide="moon" class="w-5 h-5 mx-auto mb-1"></i>
-              <div class="text-sm" id="theme-dark"></div>
-            </button>
-          </div>
-        </div>
+  <div class="max-w-xl mx-auto px-4 py-6 space-y-4">
 
-        <div>
-          <h3 class="font-bold mb-3" id="language-title"></h3>
-          <div class="flex gap-3">
-            <button onclick="setLanguage('fr')" id="lang-fr-btn" class="flex-1 px-4 py-3 rounded-lg border-2 transition">
-              <div id="language-fr">Français</div>
-            </button>
-            <button onclick="setLanguage('en')" id="lang-en-btn" class="flex-1 px-4 py-3 rounded-lg border-2 transition">
-              <div id="language-en">English</div>
-            </button>
-          </div>
-        </div>
-
-        <div>
-          <h3 class="font-bold mb-3" id="avatar-title"></h3>
-          <p class="text-sm text-gray-400 mb-3" id="avatar-description"></p>
-          <div class="grid grid-cols-4 gap-3">
-            <button onclick="setAvatar('moon')" class="avatar-btn p-3 rounded-lg border-2 transition" data-avatar="moon">
-              <i data-lucide="moon" class="w-6 h-6 mx-auto"></i>
-            </button>
-            <button onclick="setAvatar('sun')" class="avatar-btn p-3 rounded-lg border-2 transition" data-avatar="sun">
-              <i data-lucide="sun" class="w-6 h-6 mx-auto"></i>
-            </button>
-            <button onclick="setAvatar('leaf')" class="avatar-btn p-3 rounded-lg border-2 transition" data-avatar="leaf">
-              <i data-lucide="leaf" class="w-6 h-6 mx-auto"></i>
-            </button>
-            <button onclick="setAvatar('flower')" class="avatar-btn p-3 rounded-lg border-2 transition" data-avatar="flower">
-              <i data-lucide="flower" class="w-6 h-6 mx-auto"></i>
-            </button>
-            <button onclick="setAvatar('butterfly')" class="avatar-btn p-3 rounded-lg border-2 transition" data-avatar="butterfly">
-              <i data-lucide="bug" class="w-6 h-6 mx-auto"></i>
-            </button>
-            <button onclick="setAvatar('wave')" class="avatar-btn p-3 rounded-lg border-2 transition" data-avatar="wave">
-              <i data-lucide="waves" class="w-6 h-6 mx-auto"></i>
-            </button>
-            <button onclick="setAvatar('sparkles')" class="avatar-btn p-3 rounded-lg border-2 transition" data-avatar="sparkles">
-              <i data-lucide="sparkles" class="w-6 h-6 mx-auto"></i>
-            </button>
-            <button onclick="setAvatar('star')" class="avatar-btn p-3 rounded-lg border-2 transition" data-avatar="star">
-              <i data-lucide="star" class="w-6 h-6 mx-auto"></i>
-            </button>
-          </div>
-        </div>
-
-        <div>
-          <h3 class="font-bold mb-3" id="my-id-title"></h3>
-          <div class="flex gap-2">
-            <code class="flex-1 bg-purple-600/10 px-4 py-3 rounded-lg font-mono text-sm" id="user-id"></code>
-            <button onclick="copyId()" class="px-4 py-3 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition" id="copy-btn">
-              <i data-lucide="copy" class="w-5 h-5"></i>
-            </button>
-          </div>
-        </div>
+    <!-- Language -->
+    <div class="card p-5">
+      <p class="section-title">Language</p>
+      <div class="flex gap-3">
+        <button onclick="selectLanguage('en')" id="lang-en-btn" class="option-btn active">🇬🇧 English</button>
+        <button onclick="selectLanguage('fr')" id="lang-fr-btn" class="option-btn">🇫🇷 Français</button>
       </div>
     </div>
 
-    <div class="space-y-3">
-      <button onclick="logout()" class="w-full px-6 py-3 bg-purple-600/20 hover:bg-purple-600/30 rounded-xl transition flex items-center justify-center gap-2">
+    <!-- Avatar -->
+    <div class="card p-5">
+      <p class="section-title">Avatar</p>
+      <p class="text-xs text-gray-500 mb-4">Your anonymous identity icon</p>
+      <div class="grid grid-cols-4 gap-3">
+        <button onclick="selectAvatar('moon')" class="avatar-btn" data-avatar="moon"><span class="text-2xl">🌙</span></button>
+        <button onclick="selectAvatar('sun')" class="avatar-btn" data-avatar="sun"><span class="text-2xl">☀️</span></button>
+        <button onclick="selectAvatar('leaf')" class="avatar-btn" data-avatar="leaf"><span class="text-2xl">🍃</span></button>
+        <button onclick="selectAvatar('flower')" class="avatar-btn" data-avatar="flower"><span class="text-2xl">🌸</span></button>
+        <button onclick="selectAvatar('butterfly')" class="avatar-btn" data-avatar="butterfly"><span class="text-2xl">🦋</span></button>
+        <button onclick="selectAvatar('wave')" class="avatar-btn" data-avatar="wave"><span class="text-2xl">🌊</span></button>
+        <button onclick="selectAvatar('sparkles')" class="avatar-btn" data-avatar="sparkles"><span class="text-2xl">✨</span></button>
+        <button onclick="selectAvatar('star')" class="avatar-btn" data-avatar="star"><span class="text-2xl">⭐</span></button>
+      </div>
+    </div>
+
+    <!-- My ID -->
+    <div class="card p-5">
+      <p class="section-title">My anonymous ID</p>
+      <p class="text-xs text-gray-500 mb-3">Keep this safe — it's the only way to recover your account.</p>
+      <div class="flex gap-2">
+        <div class="id-display" id="user-id-display"></div>
+        <button onclick="copyId()" id="copy-btn" class="copy-btn">
+          <i data-lucide="copy" class="w-5 h-5"></i>
+        </button>
+      </div>
+    </div>
+
+    <!-- Account -->
+    <div class="card p-5 space-y-3">
+      <p class="section-title">Account</p>
+      <button onclick="logout()" class="btn-logout">
         <i data-lucide="log-out" class="w-5 h-5"></i>
-        <span id="logout-btn"></span>
+        Log out
       </button>
-      <button onclick="deleteAccount()" class="w-full px-6 py-3 bg-red-600/20 hover:bg-red-600/30 text-red-400 rounded-xl transition flex items-center justify-center gap-2">
-        <i data-lucide="trash" class="w-5 h-5"></i>
-        <span id="delete-btn"></span>
+      <button onclick="deleteAccount()" class="btn-danger">
+        <i data-lucide="trash-2" class="w-5 h-5"></i>
+        Delete my account
       </button>
     </div>
+
+    <!-- Version -->
+    <p class="text-center text-xs text-gray-600 pb-4">Confidence Book · Dark mode only · Your data stays yours</p>
   </div>
+
+  <div id="toast" class="toast">✓ Saved</div>
 
   <script>
     const userId = localStorage.getItem('confidenceBookUserID');
     if (!userId) location.href = '/auth.html';
 
-    const lang = getCurrentLanguage();
+    document.getElementById('user-id-display').textContent = userId;
 
-    document.getElementById('page-title').textContent = t('settings.title', lang);
-    document.getElementById('theme-title').textContent = t('settings.theme_title', lang);
-    document.getElementById('theme-light').textContent = t('settings.theme_light', lang);
-    document.getElementById('theme-dark').textContent = t('settings.theme_dark', lang);
-    document.getElementById('language-title').textContent = t('settings.language_title', lang);
-    document.getElementById('language-fr').textContent = t('settings.language_fr', lang);
-    document.getElementById('language-en').textContent = t('settings.language_en', lang);
-    document.getElementById('avatar-title').textContent = t('settings.avatar_title', lang);
-    document.getElementById('avatar-description').textContent = t('settings.avatar_description', lang);
-    document.getElementById('my-id-title').textContent = t('settings.my_id', lang);
-    document.getElementById('logout-btn').textContent = t('settings.logout', lang);
-    document.getElementById('delete-btn').textContent = t('settings.delete_account', lang);
-    document.getElementById('user-id').textContent = userId;
-
+    // Settings en mémoire — dark theme uniquement
     let currentSettings = {
-      theme: localStorage.getItem('confidenceBookTheme') || 'dark',
-      avatar: 'moon',
-      language: getCurrentLanguage()
+      theme: 'dark', // fixe, dark only
+      avatar: localStorage.getItem('confidenceBookAvatar') || 'moon',
+      language: localStorage.getItem('confidenceBookLanguage') || 'en'
     };
+
+    // ── Init ──────────────────────────────────────────────────────────────────
 
     async function loadSettings() {
       try {
-        const response = await fetch('/api/profile', {
-          headers: { 'X-User-ID': userId }
-        });
-        const data = await response.json();
-
-        if (data.success) {
-          currentSettings = data.profile.settings;
-          applySettings();
+        const res = await fetch('/api/profile', { headers: { 'X-User-ID': userId } });
+        const data = await res.json();
+        if (data.success && data.profile.settings) {
+          const s = data.profile.settings;
+          // CORRECTION : on ne laisse pas la DB écraser le localStorage pour la langue
+          // La source de vérité pour la langue c'est localStorage
+          currentSettings.avatar = s.avatar || currentSettings.avatar;
+          // On sync le localStorage avec ce qu'on a reçu seulement si localStorage est vide
+          if (!localStorage.getItem('confidenceBookLanguage') && s.language) {
+            currentSettings.language = s.language;
+            localStorage.setItem('confidenceBookLanguage', s.language);
+          }
+          if (!localStorage.getItem('confidenceBookAvatar') && s.avatar) {
+            currentSettings.avatar = s.avatar;
+            localStorage.setItem('confidenceBookAvatar', s.avatar);
+          }
         }
-      } catch (error) {
-        console.error('Error loading settings:', error);
-      }
+      } catch (e) {}
+      applyUI();
     }
 
-    function applySettings() {
-      document.body.className = currentSettings.theme;
-      
-      if (currentSettings.theme === 'dark') {
-        document.getElementById('theme-dark-btn').className = 'flex-1 px-4 py-3 rounded-lg border-2 border-purple-600 bg-purple-600/20 transition';
-        document.getElementById('theme-light-btn').className = 'flex-1 px-4 py-3 rounded-lg border-2 border-gray-600 transition';
-      } else {
-        document.getElementById('theme-light-btn').className = 'flex-1 px-4 py-3 rounded-lg border-2 border-purple-600 bg-purple-600/20 transition';
-        document.getElementById('theme-dark-btn').className = 'flex-1 px-4 py-3 rounded-lg border-2 border-gray-600 transition';
-      }
+    function applyUI() {
+      // Langue
+      const lang = currentSettings.language;
+      document.getElementById('lang-en-btn').classList.toggle('active', lang === 'en');
+      document.getElementById('lang-fr-btn').classList.toggle('active', lang === 'fr');
 
-      if (currentSettings.language === 'fr') {
-        document.getElementById('lang-fr-btn').className = 'flex-1 px-4 py-3 rounded-lg border-2 border-purple-600 bg-purple-600/20 transition';
-        document.getElementById('lang-en-btn').className = 'flex-1 px-4 py-3 rounded-lg border-2 border-gray-600 transition';
-      } else {
-        document.getElementById('lang-en-btn').className = 'flex-1 px-4 py-3 rounded-lg border-2 border-purple-600 bg-purple-600/20 transition';
-        document.getElementById('lang-fr-btn').className = 'flex-1 px-4 py-3 rounded-lg border-2 border-gray-600 transition';
-      }
-
+      // Avatar
       document.querySelectorAll('.avatar-btn').forEach(btn => {
-        if (btn.dataset.avatar === currentSettings.avatar) {
-          btn.className = 'avatar-btn p-3 rounded-lg border-2 border-purple-600 bg-purple-600/20 transition';
-        } else {
-          btn.className = 'avatar-btn p-3 rounded-lg border-2 border-gray-600 transition';
-        }
+        btn.classList.toggle('active', btn.dataset.avatar === currentSettings.avatar);
       });
 
       lucide.createIcons();
     }
 
+    // ── Language ──────────────────────────────────────────────────────────────
+
+    function selectLanguage(lang) {
+      currentSettings.language = lang;
+      // CORRECTION : sauvegarder en localStorage D'ABORD
+      localStorage.setItem('confidenceBookLanguage', lang);
+      applyUI();
+      saveSettings();
+      showToast(lang === 'fr' ? 'Langue : Français' : 'Language: English');
+      // Recharger la page pour appliquer la langue — le localStorage est déjà mis à jour
+      // donc au rechargement la bonne langue sera lue
+      setTimeout(() => location.reload(), 600);
+    }
+
+    // ── Avatar ────────────────────────────────────────────────────────────────
+
+    function selectAvatar(avatar) {
+      currentSettings.avatar = avatar;
+      localStorage.setItem('confidenceBookAvatar', avatar);
+      applyUI();
+      saveSettings();
+      showToast('Avatar updated');
+    }
+
+    // ── Save to DB ────────────────────────────────────────────────────────────
+
     async function saveSettings() {
       try {
         await fetch('/api/settings', {
           method: 'PUT',
-          headers: {
-            'Content-Type': 'application/json',
-            'X-User-ID': userId
-          },
+          headers: { 'Content-Type': 'application/json', 'X-User-ID': userId },
           body: JSON.stringify(currentSettings)
         });
-      } catch (error) {
-        console.error('Error saving settings:', error);
-      }
+      } catch (e) {}
     }
 
-    function setTheme(theme) {
-      currentSettings.theme = theme;
-      localStorage.setItem('confidenceBookTheme', theme);
-      applySettings();
-      saveSettings();
-    }
-
-    function setAvatar(avatar) {
-      currentSettings.avatar = avatar;
-      applySettings();
-      saveSettings();
-    }
+    // ── Copy ID ───────────────────────────────────────────────────────────────
 
     function copyId() {
-      navigator.clipboard.writeText(userId);
-      alert(t('common.copied', lang));
+      navigator.clipboard.writeText(userId).then(() => {
+        const btn = document.getElementById('copy-btn');
+        btn.classList.add('copied');
+        btn.innerHTML = '<i data-lucide="check" class="w-5 h-5"></i>';
+        lucide.createIcons();
+        showToast('ID copied!');
+        setTimeout(() => {
+          btn.classList.remove('copied');
+          btn.innerHTML = '<i data-lucide="copy" class="w-5 h-5"></i>';
+          lucide.createIcons();
+        }, 2000);
+      });
     }
+
+    // ── Account ───────────────────────────────────────────────────────────────
 
     function logout() {
       localStorage.removeItem('confidenceBookUserID');
@@ -221,17 +265,26 @@
     }
 
     function deleteAccount() {
-      if (!confirm(t('settings.delete_confirm', lang))) return;
-
+      if (!confirm('Are you sure? This action is permanent and cannot be undone.')) return;
       fetch('/api/account', {
         method: 'DELETE',
         headers: { 'X-User-ID': userId }
       }).then(() => {
-        localStorage.removeItem('confidenceBookUserID');
+        localStorage.clear();
         location.href = '/welcome.html';
-      });
+      }).catch(() => alert('Error. Please try again.'));
     }
 
+    // ── Toast ─────────────────────────────────────────────────────────────────
+
+    function showToast(msg) {
+      const toast = document.getElementById('toast');
+      toast.textContent = `✓ ${msg}`;
+      toast.classList.add('show');
+      setTimeout(() => toast.classList.remove('show'), 2000);
+    }
+
+    // ── Init ──────────────────────────────────────────────────────────────────
     loadSettings();
     lucide.createIcons();
   </script>
