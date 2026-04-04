@@ -187,14 +187,34 @@
           const lim = data.profile.limits;
           if (!lim.canComment) {
             document.getElementById('comment-limit-banner').classList.remove('hidden');
-            document.getElementById('comment-limit-msg').textContent = `You've used your ${lim.commentLimitPerWeek} comments for this week. Resets on ${lim.nextCommentReset}.`;
+            document.getElementById('comment-limit-msg').textContent =
+              `You've used your ${lim.commentLimitPerWeek} comments for this week. Resets on ${lim.nextCommentReset}.`;
             document.getElementById('comment-input').disabled = true;
             document.getElementById('send-btn').disabled = true;
           } else if (lim.commentsLeft < 999) {
-            document.getElementById('comments-left-label').textContent = `${lim.commentsLeft} comment${lim.commentsLeft !== 1 ? 's' : ''} left this week`;
+            document.getElementById('comments-left-label').textContent =
+              `${lim.commentsLeft} comment${lim.commentsLeft !== 1 ? 's' : ''} left this week`;
           }
         }
       } catch (e) {}
+    }
+
+    function showModerationError(data) {
+      const banner = document.getElementById('comment-limit-banner');
+      const msg = document.getElementById('comment-limit-msg');
+      banner.classList.remove('hidden');
+      banner.style.background = '#ef444415';
+      banner.style.borderColor = '#ef444440';
+      let html = `<span class="font-semibold text-red-400">\u{1F6AB} Reply not sent</span><br>`;
+      html += `<span class="text-gray-300 text-xs">${data.reason || 'Content does not meet our guidelines.'}</span>`;
+      if (data.offending_passage) {
+        html += `<br><span class="text-xs text-gray-500 mt-1 block">Passage flagged:</span>`;
+        html += `<span class="block mt-1 italic text-red-300 text-xs border-l-2 border-red-500 pl-2">"${data.offending_passage}"</span>`;
+      }
+      if (data.suggestion) {
+        html += `<br><span class="block mt-2 text-xs text-green-400">\u{1F4A1} ${data.suggestion}</span>`;
+      }
+      msg.innerHTML = html;
     }
 
     function renderConfidence(conf, touchedCount) {
@@ -267,6 +287,8 @@
           document.getElementById('comment-limit-msg').textContent = data.message;
           document.getElementById('comment-input').disabled = true;
           btn.disabled = true;
+        } else if (data.limitType === 'moderation') {
+          showModerationError(data);
         } else { showToast(data.reason || t('common.error')); }
       } catch (e) { showToast(t('common.error')); }
       finally { btn.textContent = t('post.send'); if (!document.getElementById('comment-input').disabled) btn.disabled = false; }
