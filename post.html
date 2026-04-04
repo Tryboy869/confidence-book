@@ -1,300 +1,249 @@
 <!DOCTYPE html>
-<html lang="fr">
+<html lang="en">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Confidence — Confidence Book</title>
+  <link rel="manifest" href="/manifest.json">
+  <meta name="theme-color" content="#7c3aed">
+  <script src="https://unpkg.com/i18next@23/dist/umd/i18next.min.js"></script>
+  <script src="/translations.js"></script>
   <script src="https://cdn.tailwindcss.com"></script>
   <script src="https://unpkg.com/lucide@latest"></script>
-  <script src="/assets/translations.js"></script>
   <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
   <style>
-    * { font-family: 'DM Sans', sans-serif; box-sizing: border-box; }
-    body { background: #0f0e17; color: #fffffe; min-height: 100vh; }
-
-    .card { background: #1a1825; border: 1px solid #2d2a3e; border-radius: 20px; }
-    .input-field {
-      width: 100%; background: #0f0e17; border: 2px solid #2d2a3e;
-      border-radius: 12px; color: #fffffe; padding: 14px 16px;
-      font-size: 0.95rem; resize: none; outline: none;
-      transition: border-color 0.2s; line-height: 1.6;
-    }
-    .input-field:focus { border-color: #7c3aed; }
-    .btn-primary {
-      background: linear-gradient(135deg, #7c3aed, #a78bfa);
-      color: white; font-weight: 600; border: none;
-      border-radius: 12px; cursor: pointer; transition: opacity 0.2s;
-      padding: 12px 24px; font-size: 0.95rem;
-    }
-    .btn-primary:hover { opacity: 0.9; }
-    .btn-primary:disabled { opacity: 0.5; cursor: not-allowed; }
-
-    .app-header {
-      background: #1a182590; backdrop-filter: blur(12px);
-      border-bottom: 1px solid #2d2a3e;
-      position: sticky; top: 0; z-index: 30;
-    }
-
-    .badge {
-      display: inline-flex; align-items: center; gap: 5px;
-      padding: 4px 12px; border-radius: 999px;
-      font-size: 0.78rem; font-weight: 600;
-    }
-
-    .react-btn {
-      display: inline-flex; align-items: center; gap: 6px;
-      padding: 7px 14px; border-radius: 999px;
-      border: 1px solid #2d2a3e; background: transparent;
-      font-size: 0.82rem; cursor: pointer; transition: all 0.2s; color: #9ca3af;
-    }
-    .react-btn:hover { border-color: #7c3aed; color: #a78bfa; background: #7c3aed10; }
-    .react-btn.active { border-color: #7c3aed; color: #a78bfa; background: #7c3aed20; }
-
-    .comment-card { background: #13111f; border: 1px solid #2d2a3e; border-radius: 16px; padding: 16px; }
-
-    .avatar-bubble {
-      width: 38px; height: 38px; border-radius: 50%;
-      background: #7c3aed20; border: 1px solid #7c3aed30;
-      display: flex; align-items: center; justify-content: center;
-      font-size: 1.1rem; flex-shrink: 0;
-    }
-
-    .modal-overlay {
-      position: fixed; inset: 0; background: #00000085;
-      backdrop-filter: blur(4px); z-index: 50;
-      display: flex; align-items: flex-end; justify-content: center; padding: 16px;
-    }
-    @media(min-width:640px) { .modal-overlay { align-items: center; } }
-    .modal-box {
-      background: #1a1825; border: 1px solid #2d2a3e;
-      border-radius: 24px; width: 100%; max-width: 480px;
-    }
-    .reaction-option {
-      display: flex; align-items: center; gap: 10px;
-      padding: 13px 16px; border-radius: 14px;
-      border: 1px solid #2d2a3e; background: transparent;
-      cursor: pointer; transition: all 0.2s; color: #fffffe; width: 100%;
-    }
-    .reaction-option:hover { background: #7c3aed15; border-color: #7c3aed; }
-
-    .spinner {
-      width: 18px; height: 18px; border: 2px solid #a78bfa40;
-      border-top-color: #a78bfa; border-radius: 50%;
-      animation: spin 0.8s linear infinite; display: inline-block;
-    }
-    @keyframes spin { to { transform: rotate(360deg); } }
-
-    .limit-banner { background: #fbbf2415; border: 1px solid #fbbf2440; border-radius: 12px; padding: 12px 16px; }
-
-    .fade-in { animation: fadeIn 0.3s ease; }
-    @keyframes fadeIn { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; } }
-
-    ::-webkit-scrollbar { width: 6px; }
-    ::-webkit-scrollbar-thumb { background: #3d3a4e; border-radius: 3px; }
+    *{font-family:'DM Sans',sans-serif;box-sizing:border-box}
+    body{background:#0f0e17;color:#fffffe;min-height:100vh}
+    .app-header{background:#1a182590;backdrop-filter:blur(12px);border-bottom:1px solid #2d2a3e;position:sticky;top:0;z-index:30}
+    .card{background:#1a1825;border:1px solid #2d2a3e;border-radius:20px}
+    .input-field{width:100%;background:#0f0e17;border:2px solid #2d2a3e;border-radius:12px;color:#fffffe;padding:14px 16px;font-size:.95rem;resize:none;outline:none;transition:border-color .2s;line-height:1.6}
+    .input-field:focus{border-color:#7c3aed}
+    .btn-primary{background:linear-gradient(135deg,#7c3aed,#a78bfa);color:white;font-weight:600;border:none;border-radius:12px;cursor:pointer;transition:opacity .2s;padding:12px 24px;font-size:.95rem}
+    .btn-primary:hover{opacity:.9}
+    .btn-primary:disabled{opacity:.5;cursor:not-allowed}
+    .badge{display:inline-flex;align-items:center;gap:5px;padding:4px 12px;border-radius:999px;font-size:.75rem;font-weight:600}
+    .react-btn{display:inline-flex;align-items:center;gap:6px;padding:7px 14px;border-radius:999px;border:1px solid #2d2a3e;background:transparent;font-size:.82rem;cursor:pointer;transition:all .2s;color:#9ca3af}
+    .react-btn:hover{border-color:#7c3aed;color:#a78bfa}
+    .react-btn.active{border-color:#7c3aed;color:#a78bfa;background:#7c3aed20}
+    .share-btn{display:inline-flex;align-items:center;gap:5px;padding:6px 14px;border-radius:999px;border:1px solid #2d2a3e;background:transparent;font-size:.82rem;cursor:pointer;transition:all .2s;color:#9ca3af}
+    .share-btn:hover{border-color:#10b981;color:#10b981;background:#10b98110}
+    .comment-card{background:#13111f;border:1px solid #2d2a3e;border-radius:16px;padding:16px}
+    .avatar-bubble{width:38px;height:38px;border-radius:50%;background:#7c3aed20;border:1px solid #7c3aed30;display:flex;align-items:center;justify-content:center;font-size:1.1rem;flex-shrink:0}
+    .modal-overlay{position:fixed;inset:0;background:#00000085;backdrop-filter:blur(4px);z-index:50;display:flex;align-items:flex-end;justify-content:center;padding:16px}
+    @media(min-width:640px){.modal-overlay{align-items:center}}
+    .modal-box{background:#1a1825;border:1px solid #2d2a3e;border-radius:24px;width:100%;max-width:480px}
+    .reaction-option{display:flex;align-items:center;gap:10px;padding:13px 16px;border-radius:14px;border:1px solid #2d2a3e;background:transparent;cursor:pointer;transition:all .2s;color:#fffffe;width:100%}
+    .reaction-option:hover{background:#7c3aed15;border-color:#7c3aed}
+    .limit-banner{background:#fbbf2415;border:1px solid #fbbf2440;border-radius:12px;padding:12px 16px}
+    .spinner{width:18px;height:18px;border:2px solid #a78bfa40;border-top-color:#a78bfa;border-radius:50%;animation:spin .8s linear infinite;display:inline-block}
+    @keyframes spin{to{transform:rotate(360deg)}}
+    .toast{position:fixed;bottom:24px;left:50%;transform:translateX(-50%) translateY(20px);background:#10b981;color:white;font-weight:600;padding:12px 24px;border-radius:12px;opacity:0;transition:all .3s;z-index:100;pointer-events:none;white-space:nowrap}
+    .toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
+    .fade-in{animation:fadeIn .3s ease}
+    @keyframes fadeIn{from{opacity:0;transform:translateY(8px)}to{opacity:1}}
+    ::-webkit-scrollbar{width:6px}
+    ::-webkit-scrollbar-thumb{background:#3d3a4e;border-radius:3px}
+    .social-btn{display:flex;align-items:center;justify-content:center;gap:8px;padding:12px;border-radius:14px;font-weight:600;font-size:.88rem;cursor:pointer;border:1px solid;transition:opacity .2s}
+    .social-btn:hover{opacity:.85}
   </style>
 </head>
 <body>
 
-  <!-- Header -->
   <header class="app-header">
     <div class="max-w-2xl mx-auto px-4 py-4 flex items-center justify-between">
       <button onclick="location.href='/feed.html'" class="flex items-center gap-2 text-purple-400 hover:text-purple-300 transition font-medium">
         <i data-lucide="arrow-left" class="w-5 h-5"></i>
-        Retour
+        <span data-i18n="post.back">Back</span>
       </button>
       <span class="text-sm font-semibold text-gray-400">Confidence Book</span>
-      <div class="w-20"></div>
+      <button onclick="openShare()" class="flex items-center gap-1.5 text-sm text-gray-400 hover:text-green-400 transition px-3 py-2 rounded-xl hover:bg-green-400/10">
+        <i data-lucide="share-2" class="w-4 h-4"></i>
+        <span data-i18n="post.share_btn">Share</span>
+      </button>
     </div>
   </header>
 
   <div class="max-w-2xl mx-auto px-4 py-6 space-y-5">
-
-    <!-- Confidence principale -->
     <div id="main-confidence" class="fade-in">
       <div class="card p-8 text-center text-gray-500">
         <div class="spinner mx-auto mb-3"></div>
-        <p class="text-sm">Chargement...</p>
+        <p class="text-sm" data-i18n="common.loading">Loading...</p>
       </div>
     </div>
 
-    <!-- Limite commentaires -->
     <div id="comment-limit-banner" class="limit-banner hidden">
       <p class="text-yellow-400 text-sm font-semibold" id="comment-limit-msg"></p>
     </div>
 
-    <!-- Zone commentaire -->
     <div class="card p-5">
       <h2 class="font-semibold mb-4 flex items-center gap-2">
         <i data-lucide="message-circle" class="w-5 h-5 text-purple-400"></i>
-        Répondre avec bienveillance
+        <span data-i18n="post.reply_title">Reply with kindness</span>
       </h2>
-      <textarea id="comment-input" class="input-field mb-3" rows="3"
-        placeholder="Écris quelque chose de bienveillant..."></textarea>
+      <textarea id="comment-input" class="input-field mb-3" rows="3" data-i18n-placeholder="post.reply_placeholder"></textarea>
       <div class="flex items-center justify-between">
         <span class="text-xs text-gray-500" id="comments-left-label"></span>
-        <button onclick="submitComment()" id="send-btn" class="btn-primary">
-          Envoyer
-        </button>
+        <button onclick="submitComment()" id="send-btn" class="btn-primary" data-i18n="post.send">Send</button>
       </div>
     </div>
 
-    <!-- Liste commentaires -->
     <div id="comments-list" class="space-y-3 fade-in"></div>
-
   </div>
 
-  <!-- Footer -->
   <footer class="border-t border-gray-800 mt-12 py-6">
     <div class="max-w-2xl mx-auto px-4 text-center text-sm text-gray-500 space-y-1">
-      <p>
-        <a href="mailto:nexusstudio100@gmail.com" class="text-purple-400 hover:underline">Support</a> ·
-        <a href="https://wa.me/22969056283" target="_blank" class="text-purple-400 hover:underline">WhatsApp</a>
-      </p>
-      <p class="text-xs">🌍 Aide : <a href="tel:3114" class="text-red-400">3114 (FR)</a> · <a href="tel:18334564566" class="text-red-400">1-833-456-4566 (CA)</a></p>
+      <p><a href="mailto:nexusstudio100@gmail.com" class="text-purple-400 hover:underline">Support</a> · <a href="https://wa.me/22969056283" target="_blank" class="text-purple-400 hover:underline">WhatsApp</a></p>
+      <p class="text-xs">🌍 <a href="tel:3114" class="text-red-400">3114</a> · <a href="tel:988" class="text-red-400">988</a> · <a href="tel:116123" class="text-red-400">116 123</a></p>
     </div>
   </footer>
 
   <!-- Reactions Modal -->
-  <div id="reactions-modal" class="modal-overlay hidden" onclick="handleModalBg(event)">
+  <div id="reactions-modal" class="modal-overlay hidden" onclick="if(event.target.id==='reactions-modal')closeReactions()">
     <div class="modal-box p-5">
-      <p class="text-sm text-gray-400 text-center mb-4">Comment tu te sens par rapport à cette confidence ?</p>
+      <p class="text-sm text-gray-400 text-center mb-4" data-i18n="feed.reactions_question">How does this confidence make you feel?</p>
       <div class="space-y-2">
-        <button onclick="react('soutiens')" class="reaction-option"><span class="text-xl">🤝</span><span class="font-medium">Je te soutiens</span></button>
-        <button onclick="react('espoir')" class="reaction-option"><span class="text-xl">🔥</span><span class="font-medium">Garde espoir</span></button>
-        <button onclick="react('compatis')" class="reaction-option"><span class="text-xl">💜</span><span class="font-medium">Je compatis</span></button>
-        <button onclick="react('pas_seul')" class="reaction-option"><span class="text-xl">🫂</span><span class="font-medium">T'es pas seul·e</span></button>
-        <button onclick="react('courage')" class="reaction-option"><span class="text-xl">🙌</span><span class="font-medium">Courage</span></button>
-        <button onclick="react('triste')" class="reaction-option"><span class="text-xl">💔</span><span class="font-medium">Triste</span></button>
+        <button onclick="react('soutiens')" class="reaction-option"><span class="text-xl">🤝</span><span class="font-medium" data-i18n="feed.react_soutiens">I support you</span></button>
+        <button onclick="react('espoir')" class="reaction-option"><span class="text-xl">🔥</span><span class="font-medium" data-i18n="feed.react_espoir">Keep hope</span></button>
+        <button onclick="react('compatis')" class="reaction-option"><span class="text-xl">💜</span><span class="font-medium" data-i18n="feed.react_compatis">I empathize</span></button>
+        <button onclick="react('pas_seul')" class="reaction-option"><span class="text-xl">🫂</span><span class="font-medium" data-i18n="feed.react_pas_seul">You're not alone</span></button>
+        <button onclick="react('courage')" class="reaction-option"><span class="text-xl">🙌</span><span class="font-medium" data-i18n="feed.react_courage">Courage</span></button>
+        <button onclick="react('triste')" class="reaction-option"><span class="text-xl">💔</span><span class="font-medium" data-i18n="feed.react_triste">Heartbroken for you</span></button>
       </div>
     </div>
   </div>
 
-  <script>
-    // CORRECTION 1 : bonne clé localStorage (même que auth.html et feed.html)
-    const currentUserId = localStorage.getItem('confidenceBookUserID');
-    const urlParams = new URLSearchParams(window.location.search);
-    const confId = urlParams.get('id');
+  <!-- Share Modal -->
+  <div id="share-modal" class="modal-overlay hidden" onclick="if(event.target.id==='share-modal')closeShare()">
+    <div class="modal-box p-6">
+      <div class="flex items-center justify-between mb-5">
+        <h2 class="font-bold text-lg" data-i18n="post.share_title">Share this confidence</h2>
+        <button onclick="closeShare()" class="p-2 rounded-xl hover:bg-white/5 transition">
+          <i data-lucide="x" class="w-5 h-5 text-gray-400"></i>
+        </button>
+      </div>
 
-    // CORRECTION 2 : redirects vers les bonnes pages
-    if (!currentUserId) { window.location.href = '/auth.html'; }
-    if (!confId) { window.location.href = '/feed.html'; }
+      <div class="flex gap-2 mb-5">
+        <div id="share-url-display" class="flex-1 bg-black/30 border border-gray-700 rounded-xl px-4 py-3 font-mono text-xs text-gray-300 overflow-hidden" style="word-break:break-all"></div>
+        <button onclick="copyShareUrl()" id="copy-url-btn" class="px-4 py-3 bg-purple-600 text-white rounded-xl hover:bg-purple-700 transition font-semibold flex-shrink-0 flex items-center gap-2">
+          <i data-lucide="copy" class="w-4 h-4"></i>
+        </button>
+      </div>
+
+      <div class="grid grid-cols-2 gap-3 mb-4">
+        <button onclick="shareToWhatsApp()" class="social-btn" style="background:#25d36618;border-color:#25d36640;color:#25d366">
+          <span class="text-lg">💬</span> WhatsApp
+        </button>
+        <button onclick="shareToTwitter()" class="social-btn" style="background:#1da1f218;border-color:#1da1f240;color:#1da1f2">
+          <span class="text-lg">🐦</span> Twitter / X
+        </button>
+        <button onclick="shareToFacebook()" class="social-btn" style="background:#1877f218;border-color:#1877f240;color:#1877f2">
+          <span class="text-lg">📘</span> Facebook
+        </button>
+        <button onclick="nativeShare()" class="social-btn" style="background:#7c3aed18;border-color:#7c3aed40;color:#a78bfa">
+          <i data-lucide="share" class="w-4 h-4"></i> More
+        </button>
+      </div>
+
+      <p class="text-xs text-gray-600 text-center">Confidences are anonymous — no personal data is shared when you share this link</p>
+    </div>
+  </div>
+
+  <div id="toast" class="toast"></div>
+
+  <script>
+    if ('serviceWorker' in navigator) navigator.serviceWorker.register('/sw.js').catch(() => {});
+
+    const userId = localStorage.getItem('confidenceBookUserID');
+    const confId = new URLSearchParams(window.location.search).get('id');
+    if (!userId) location.href = '/auth.html';
+    if (!confId) location.href = '/feed.html';
 
     const CHAPTERS = {
-      ruptures:     { emoji: '💔', label: 'Ruptures',      color: '#ef4444' },
-      isolement:    { emoji: '😔', label: 'Isolement',     color: '#3b82f6' },
-      traumas:      { emoji: '🔥', label: 'Traumas',       color: '#f97316' },
-      stress:       { emoji: '🧠', label: 'Stress',        color: '#8b5cf6' },
-      spiritualite: { emoji: '🪞', label: 'Spiritualité',  color: '#6366f1' },
-      espoir:       { emoji: '🤝', label: 'Espoir',        color: '#10b981' }
+      ruptures:{emoji:'💔',color:'#ef4444'}, isolement:{emoji:'😔',color:'#3b82f6'},
+      traumas:{emoji:'🔥',color:'#f97316'}, stress:{emoji:'🧠',color:'#8b5cf6'},
+      spiritualite:{emoji:'🪞',color:'#6366f1'}, espoir:{emoji:'🤝',color:'#10b981'}
     };
+    const AVATARS_EMOJI = {moon:'🌙',sun:'☀️',leaf:'🍃',flower:'🌸',butterfly:'🦋',wave:'🌊',sparkles:'✨',star:'⭐'};
+    const postUrl = `${location.origin}/post.html?id=${confId}`;
 
-    const AVATARS_EMOJI = {
-      moon: '🌙', sun: '☀️', leaf: '🍃', flower: '🌸',
-      butterfly: '🦋', wave: '🌊', sparkles: '✨', star: '⭐'
-    };
-
-    let commentsLeft = 3;
-
-    document.addEventListener('DOMContentLoaded', loadPost);
+    document.addEventListener('DOMContentLoaded', () => { loadPost(); loadUserLimits(); });
 
     async function loadPost() {
       try {
-        // CORRECTION 3 : appel direct /api/confidences/:id au lieu de charger tout le feed
-        const response = await fetch(`/api/confidences/${confId}`, {
-          headers: { 'X-User-ID': currentUserId }
-        });
-        const result = await response.json();
-
-        if (result.success) {
-          renderMainConfidence(result.confidence);
-          renderComments(result.responses || []);
-        } else {
-          // CORRECTION 4 : redirect vers feed.html pas app.html
-          window.location.href = '/feed.html';
-        }
-      } catch (error) {
-        console.error('Error loading post:', error);
-        document.getElementById('main-confidence').innerHTML =
-          `<div class="card p-8 text-center text-gray-500">Erreur de chargement. <button onclick="loadPost()" class="text-purple-400 underline">Réessayer</button></div>`;
+        const res = await fetch(`/api/confidences/${confId}`, { headers: { 'X-User-ID': userId } });
+        const data = await res.json();
+        if (data.success) { renderConfidence(data.confidence, data.touchedCount || 0); renderComments(data.responses || []); }
+        else location.href = '/feed.html';
+      } catch (e) {
+        document.getElementById('main-confidence').innerHTML = `<div class="card p-8 text-center text-gray-500">${t('common.error')} <button onclick="loadPost()" class="text-purple-400 underline ml-1">Retry</button></div>`;
       }
     }
 
-    // Charge aussi les limites utilisateur
     async function loadUserLimits() {
       try {
-        const res = await fetch('/api/profile', { headers: { 'X-User-ID': currentUserId } });
+        const res = await fetch('/api/profile', { headers: { 'X-User-ID': userId } });
         const data = await res.json();
         if (data.success && data.profile.limits) {
-          const limits = data.profile.limits;
-          commentsLeft = limits.commentsLeft;
-          const banner = document.getElementById('comment-limit-banner');
-          const label = document.getElementById('comments-left-label');
-          const input = document.getElementById('comment-input');
-          const btn = document.getElementById('send-btn');
-
-          if (!limits.canComment) {
-            banner.classList.remove('hidden');
-            document.getElementById('comment-limit-msg').textContent =
-              `Tu as atteint ta limite de ${limits.commentLimitPerDay} commentaires aujourd'hui. Reset à ${limits.nextCommentReset}.`;
-            input.disabled = true;
-            input.placeholder = 'Limite atteinte pour aujourd\'hui';
-            btn.disabled = true;
-          } else {
-            label.textContent = `${limits.commentsLeft} commentaire${limits.commentsLeft > 1 ? 's' : ''} restant aujourd'hui`;
+          const lim = data.profile.limits;
+          if (!lim.canComment) {
+            document.getElementById('comment-limit-banner').classList.remove('hidden');
+            document.getElementById('comment-limit-msg').textContent = t('post.limit_comments', { n: lim.commentLimitPerDay, time: lim.nextCommentReset });
+            document.getElementById('comment-input').disabled = true;
+            document.getElementById('send-btn').disabled = true;
+          } else if (lim.commentsLeft < 999) {
+            document.getElementById('comments-left-label').textContent = `${lim.commentsLeft} comment${lim.commentsLeft !== 1 ? 's' : ''} left today`;
           }
         }
       } catch (e) {}
     }
 
-    function renderMainConfidence(conf) {
+    function renderConfidence(conf, touchedCount) {
       const ch = CHAPTERS[conf.emotion] || CHAPTERS.espoir;
-      const isOwner = conf.user_id === currentUserId;
+      const chLabel = t(`feed.emotion_${conf.emotion}`) || conf.emotion;
+      const isOwner = conf.user_id === userId;
+      const touchedMsg = touchedCount > 0 ? (touchedCount === 1 ? t('post.touched', {n:1}) : t('post.touched_plural', {n:touchedCount})) : '';
 
       document.getElementById('main-confidence').innerHTML = `
         <article class="card overflow-hidden fade-in">
           <div class="p-5 flex items-center justify-between" style="border-bottom:1px solid #2d2a3e">
-            <span class="badge" style="background:${ch.color}18;color:${ch.color}">${ch.emoji} ${ch.label}</span>
+            <span class="badge" style="background:${ch.color}18;color:${ch.color}">${ch.emoji} ${chLabel}</span>
             <div class="flex items-center gap-3">
               <span class="text-xs text-gray-500">${timeAgo(conf.created_at)}</span>
-              ${isOwner ? `<button onclick="deleteConfidence('${conf.id}')" class="text-red-400 hover:text-red-300 text-xs transition">Supprimer</button>` : ''}
+              ${isOwner ? `<button onclick="deleteConf('${conf.id}')" class="text-red-400 hover:text-red-300 text-xs">${t('feed.delete')}</button>` : ''}
             </div>
           </div>
-          <div class="p-5">
-            <p class="leading-relaxed text-gray-200">${escapeHtml(conf.content)}</p>
-          </div>
-          <div class="px-5 pb-5 flex flex-wrap gap-2">
-            <button onclick="document.getElementById('reactions-modal').classList.remove('hidden')"
+          <div class="p-5"><p class="leading-relaxed text-gray-200">${escapeHtml(conf.content)}</p></div>
+          <div class="px-5 pb-5 flex flex-wrap items-center gap-2">
+            <button onclick="document.getElementById('reactions-modal').classList.remove('hidden');lucide.createIcons()"
               class="react-btn ${conf.user_reaction ? 'active' : ''}">
-              ${conf.user_reaction ? '✓ Réagi' : '+ Réagir'}
+              ${conf.user_reaction ? t('post.reacted_btn') : t('post.react_btn')}
               <span class="text-gray-500">· ${conf.reaction_count || 0}</span>
             </button>
             <span class="react-btn" style="cursor:default">
               <i data-lucide="message-circle" class="w-3.5 h-3.5"></i>
-              ${conf.response_count || 0} réponse${conf.response_count > 1 ? 's' : ''}
+              ${conf.response_count || 0}
             </span>
+            ${touchedMsg ? `<span class="text-xs text-gray-600">💜 ${touchedMsg}</span>` : ''}
+            <button onclick="openShare()" class="share-btn ml-auto">
+              <i data-lucide="share-2" class="w-3.5 h-3.5"></i> ${t('post.share_btn')}
+            </button>
           </div>
         </article>`;
       lucide.createIcons();
     }
 
     function renderComments(comments) {
-      const container = document.getElementById('comments-list');
-
-      if (comments.length === 0) {
-        container.innerHTML = `
-          <div class="text-center py-10 text-gray-500">
-            <p class="text-3xl mb-2">💬</p>
-            <p class="text-sm">Aucune réponse. Sois le premier à apporter du soutien.</p>
-          </div>`;
+      const c = document.getElementById('comments-list');
+      if (!comments.length) {
+        c.innerHTML = `<div class="text-center py-10 text-gray-500"><p class="text-3xl mb-2">💬</p><p class="text-sm">${t('post.no_replies')}</p></div>`;
         return;
       }
-
-      container.innerHTML = comments.map(c => `
+      c.innerHTML = comments.map(r => `
         <div class="comment-card flex gap-3 fade-in">
-          <div class="avatar-bubble">${AVATARS_EMOJI[c.avatar] || '🌟'}</div>
+          <div class="avatar-bubble">${AVATARS_EMOJI[r.avatar]||'🌟'}</div>
           <div class="flex-1">
-            <p class="text-sm leading-relaxed text-gray-200">${escapeHtml(c.content)}</p>
-            <p class="text-xs text-gray-600 mt-2">${timeAgo(c.created_at)}</p>
+            <p class="text-sm leading-relaxed text-gray-200">${escapeHtml(r.content)}</p>
+            <p class="text-xs text-gray-600 mt-2">${timeAgo(r.created_at)}</p>
           </div>
         </div>`).join('');
     }
@@ -302,91 +251,97 @@
     async function submitComment() {
       const text = document.getElementById('comment-input').value.trim();
       if (!text || text.length < 3) return;
-
       const btn = document.getElementById('send-btn');
       btn.innerHTML = '<span class="spinner"></span>';
       btn.disabled = true;
-
       try {
         const res = await fetch('/api/responses', {
           method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            // CORRECTION 5 : header unifié X-User-ID
-            'X-User-ID': currentUserId
-          },
+          headers: { 'Content-Type': 'application/json', 'X-User-ID': userId },
           body: JSON.stringify({ confidenceId: confId, content: text })
         });
         const data = await res.json();
-
-        if (data.success) {
-          document.getElementById('comment-input').value = '';
-          await loadPost();
-          await loadUserLimits();
-        } else if (data.limitType === 'daily_comment') {
+        if (data.success) { document.getElementById('comment-input').value = ''; await loadPost(); await loadUserLimits(); }
+        else if (data.limitType === 'daily_comment') {
           document.getElementById('comment-limit-banner').classList.remove('hidden');
           document.getElementById('comment-limit-msg').textContent = data.message;
-          btn.disabled = true;
           document.getElementById('comment-input').disabled = true;
-        } else if (data.limitType === 'moderation') {
-          alert(`Commentaire non publié : ${data.reason || 'Contenu non conforme.'}`);
-        } else {
-          alert(data.message || 'Erreur lors de l\'envoi.');
-        }
-      } catch (e) {
-        alert('Erreur de connexion. Réessaie.');
-      } finally {
-        btn.innerHTML = 'Envoyer';
-        if (!document.getElementById('comment-input').disabled) btn.disabled = false;
-      }
+          btn.disabled = true;
+        } else { showToast(data.reason || t('common.error')); }
+      } catch (e) { showToast(t('common.error')); }
+      finally { btn.textContent = t('post.send'); if (!document.getElementById('comment-input').disabled) btn.disabled = false; }
     }
 
     async function react(type) {
-      document.getElementById('reactions-modal').classList.add('hidden');
+      closeReactions();
       try {
         await fetch('/api/reactions', {
           method: 'POST',
-          headers: { 'Content-Type': 'application/json', 'X-User-ID': currentUserId },
-          // CORRECTION 6 : 'type' pas 'reactionType'
+          headers: { 'Content-Type': 'application/json', 'X-User-ID': userId },
           body: JSON.stringify({ confidenceId: confId, type })
         });
         loadPost();
       } catch (e) {}
     }
 
-    async function deleteConfidence(id) {
-      if (!confirm('Supprimer cette confidence ?')) return;
-      try {
-        await fetch(`/api/confidences/${id}`, {
-          method: 'DELETE',
-          headers: { 'X-User-ID': currentUserId }
-        });
-        window.location.href = '/feed.html';
-      } catch (e) {}
+    function closeReactions() { document.getElementById('reactions-modal').classList.add('hidden'); }
+
+    async function deleteConf(id) {
+      if (!confirm(t('post.delete_confirm'))) return;
+      try { await fetch(`/api/confidences/${id}`, { method: 'DELETE', headers: { 'X-User-ID': userId } }); location.href = '/feed.html'; }
+      catch (e) {}
     }
 
-    function handleModalBg(e) {
-      if (e.target.id === 'reactions-modal') {
-        document.getElementById('reactions-modal').classList.add('hidden');
-      }
+    // ── Share ─────────────────────────────────────────────────────────────────
+    function openShare() {
+      document.getElementById('share-url-display').textContent = postUrl;
+      document.getElementById('share-modal').classList.remove('hidden');
+      lucide.createIcons();
+    }
+    function closeShare() { document.getElementById('share-modal').classList.add('hidden'); }
+
+    function copyShareUrl() {
+      navigator.clipboard.writeText(postUrl).then(() => {
+        const btn = document.getElementById('copy-url-btn');
+        btn.innerHTML = '<i data-lucide="check" class="w-4 h-4"></i>';
+        btn.style.background = '#10b981';
+        lucide.createIcons();
+        showToast(t('post.share_copied'));
+        setTimeout(() => { btn.innerHTML = '<i data-lucide="copy" class="w-4 h-4"></i>'; btn.style.background = ''; lucide.createIcons(); }, 2000);
+      });
     }
 
-    function escapeHtml(text) {
-      const d = document.createElement('div');
-      d.textContent = text;
-      return d.innerHTML;
+    function shareToWhatsApp() {
+      window.open(`https://wa.me/?text=${encodeURIComponent('Someone shared their story on Confidence Book — read & support them: ' + postUrl)}`, '_blank');
+    }
+    function shareToTwitter() {
+      window.open(`https://twitter.com/intent/tweet?text=${encodeURIComponent('Someone shared their story anonymously on Confidence Book.')}&url=${encodeURIComponent(postUrl)}`, '_blank');
+    }
+    function shareToFacebook() {
+      window.open(`https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(postUrl)}`, '_blank');
+    }
+    async function nativeShare() {
+      if (navigator.share) {
+        try { await navigator.share({ title: 'Confidence Book', text: 'Someone shared their story anonymously. Read & support them.', url: postUrl }); }
+        catch (e) {}
+      } else { copyShareUrl(); }
     }
 
+    function escapeHtml(s) { const d = document.createElement('div'); d.textContent = s; return d.innerHTML; }
     function timeAgo(ts) {
       const s = Math.floor((Date.now() - ts) / 1000);
-      if (s < 60) return "À l'instant";
-      if (s < 3600) return `${Math.floor(s / 60)}min`;
-      if (s < 86400) return `${Math.floor(s / 3600)}h`;
-      return `${Math.floor(s / 86400)}j`;
+      if (s < 60) return t('common.just_now');
+      if (s < 3600) return `${Math.floor(s/60)}${t('common.minutes')}`;
+      if (s < 86400) return `${Math.floor(s/3600)}${t('common.hours')}`;
+      return `${Math.floor(s/86400)}${t('common.days')}`;
+    }
+    function showToast(msg) {
+      const toast = document.getElementById('toast');
+      toast.textContent = msg;
+      toast.classList.add('show');
+      setTimeout(() => toast.classList.remove('show'), 2500);
     }
 
-    // Init
-    loadUserLimits();
     lucide.createIcons();
   </script>
 </body>
