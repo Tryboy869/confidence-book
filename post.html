@@ -187,11 +187,11 @@
           const lim = data.profile.limits;
           if (!lim.canComment) {
             document.getElementById('comment-limit-banner').classList.remove('hidden');
-            document.getElementById('comment-limit-msg').textContent = t('post.limit_comments', { n: lim.commentLimitPerDay, time: lim.nextCommentReset });
+            document.getElementById('comment-limit-msg').textContent = `You've used your ${lim.commentLimitPerWeek} comments for this week. Resets on ${lim.nextCommentReset}.`;
             document.getElementById('comment-input').disabled = true;
             document.getElementById('send-btn').disabled = true;
           } else if (lim.commentsLeft < 999) {
-            document.getElementById('comments-left-label').textContent = `${lim.commentsLeft} comment${lim.commentsLeft !== 1 ? 's' : ''} left today`;
+            document.getElementById('comments-left-label').textContent = `${lim.commentsLeft} comment${lim.commentsLeft !== 1 ? 's' : ''} left this week`;
           }
         }
       } catch (e) {}
@@ -262,7 +262,7 @@
         });
         const data = await res.json();
         if (data.success) { document.getElementById('comment-input').value = ''; await loadPost(); await loadUserLimits(); }
-        else if (data.limitType === 'daily_comment') {
+        else if (data.limitType === 'weekly_comment') {
           document.getElementById('comment-limit-banner').classList.remove('hidden');
           document.getElementById('comment-limit-msg').textContent = data.message;
           document.getElementById('comment-input').disabled = true;
