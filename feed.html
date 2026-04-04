@@ -288,13 +288,14 @@
           const limits = profileData.profile.limits;
           if (!limits.canPost) {
             document.getElementById('limit-banner').classList.remove('hidden');
-            document.getElementById('limit-msg').textContent = `⏳ You've already shared this week. Next reset: ${limits.nextPostReset}`;
-            document.getElementById('compose-tag').textContent = '1/week';
+            document.getElementById('limit-msg').textContent = `⏳ You've shared 3 times this week. Next reset: ${limits.nextPostReset}`;
+            document.getElementById('compose-tag').textContent = '3/week';
             document.getElementById('compose-area').style.opacity = '0.5';
             document.getElementById('compose-area').style.cursor = 'default';
             document.getElementById('compose-area').onclick = null;
           } else {
-            document.getElementById('compose-tag').textContent = '1 left this week';
+            const left = limits.postLimitPerWeek - limits.postsThisWeek;
+            document.getElementById('compose-tag').textContent = `${left} left this week`;
           }
         }
 
