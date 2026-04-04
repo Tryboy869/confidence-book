@@ -1,8 +1,24 @@
 import { createClient } from '@libsql/client';
+import bcrypt from 'bcryptjs';
 import dotenv from 'dotenv';
 import crypto from 'crypto';
 
 dotenv.config();
+
+// ─── Validation des variables d'env critiques au démarrage ──────────────────
+const REQUIRED_ENV = ['DATABASE_URL', 'DATABASE_AUTH_TOKEN'];
+for (const key of REQUIRED_ENV) {
+  if (!process.env[key]) {
+    console.error(`❌ FATAL: Missing required env variable: ${key}`);
+    process.exit(1);
+  }
+}
+if (!process.env.ADMIN_KEY || process.env.ADMIN_KEY.length < 16) {
+  console.warn('⚠️  ADMIN_KEY is missing or too short (< 16 chars). Admin routes are insecure.');
+}
+if (!process.env.GROQ_API_KEY) {
+  console.warn('⚠️  GROQ_API_KEY is missing. Moderation will fail-open.');
+}
 
 const GROQ_MODELS = [
   'llama-3.1-8b-instant',
@@ -19,7 +35,12 @@ const LIMITS = {
   POST_PER_WEEK: 3,
   COMMENTS_PER_WEEK: 9,
   CONFIDENCE_EXPIRY_DAYS: 90,
-  PREMIUM_EXPIRY_DAYS: 36500
+  PREMIUM_EXPIRY_DAYS: 36500,
+  // Validation inputs
+  SECRET_PHRASE_MIN: 6,
+  SECRET_PHRASE_MAX: 200,
+  CONTENT_MIN: 10,
+  CONTENT_MAX: 5000,
 };
 
 const WEEKLY_PROMPTS = [
@@ -82,10 +103,19 @@ export class BackendService {
         moderation_score REAL,
         moderation_message TEXT,
         needs_review INTEGER DEFAULT 0,
+        edit_count INTEGER DEFAULT 0,
         created_at INTEGER NOT NULL,
         expires_at INTEGER NOT NULL,
         FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
       )`);
+
+      // Migration : ajouter edit_count si la colonne n'existe pas encore (upgrade safe)
+      try {
+        await this.db.execute(`ALTER TABLE confidences ADD COLUMN edit_count INTEGER DEFAULT 0`);
+        console.log('✅ Migration: added edit_count to confidences');
+      } catch (e) {
+        // Colonne déjà présente — c'est OK
+      }
 
       await this.db.execute(`CREATE TABLE IF NOT EXISTS reactions (
         id TEXT PRIMARY KEY,
@@ -130,7 +160,6 @@ export class BackendService {
         FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
       )`);
 
-      // NOUVEAU : abonnements aux catégories
       await this.db.execute(`CREATE TABLE IF NOT EXISTS subscriptions (
         id TEXT PRIMARY KEY,
         user_id TEXT NOT NULL,
@@ -140,7 +169,6 @@ export class BackendService {
         FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
       )`);
 
-      // NOUVEAU : notifications in-app
       await this.db.execute(`CREATE TABLE IF NOT EXISTS notifications (
         id TEXT PRIMARY KEY,
         user_id TEXT NOT NULL,
@@ -177,37 +205,109 @@ export class BackendService {
     return `${prefix}_${crypto.randomBytes(4).toString('hex')}`;
   }
 
-  hashPhrase(phrase) {
-    const salt = process.env.HASH_SALT || 'confidence-book-salt-v1';
-    return crypto.createHash('sha256').update(salt + phrase).digest('hex');
+  // ─── Hachage bcrypt (sécurisé contre brute-force) ─────────────────────────
+  async hashPhrase(phrase) {
+    const saltRounds = 12;
+    return await bcrypt.hash(phrase, saltRounds);
   }
 
+  async verifyPhrase(phrase, hash) {
+    return await bcrypt.compare(phrase, hash);
+  }
+
+  // ─── Admin key comparison sécurisée (timing-safe) ─────────────────────────
+  verifyAdminKey(provided) {
+    const expected = process.env.ADMIN_KEY || '';
+    if (!provided || provided.length !== expected.length) return false;
+    try {
+      return crypto.timingSafeEqual(
+        Buffer.from(provided, 'utf8'),
+        Buffer.from(expected, 'utf8')
+      );
+    } catch {
+      return false;
+    }
+  }
+
+  // ─── Validation des inputs ────────────────────────────────────────────────
+  validateSecretPhrase(phrase) {
+    if (typeof phrase !== 'string') return { valid: false, message: 'Invalid input type' };
+    const trimmed = phrase.trim();
+    if (trimmed.length < LIMITS.SECRET_PHRASE_MIN)
+      return { valid: false, message: `Secret phrase must be at least ${LIMITS.SECRET_PHRASE_MIN} characters` };
+    if (trimmed.length > LIMITS.SECRET_PHRASE_MAX)
+      return { valid: false, message: `Secret phrase must be under ${LIMITS.SECRET_PHRASE_MAX} characters` };
+    return { valid: true, value: trimmed };
+  }
+
+  validateContent(content) {
+    if (typeof content !== 'string') return { valid: false, message: 'Invalid content type' };
+    const trimmed = content.trim();
+    if (trimmed.length < LIMITS.CONTENT_MIN)
+      return { valid: false, message: `Content must be at least ${LIMITS.CONTENT_MIN} characters` };
+    if (trimmed.length > LIMITS.CONTENT_MAX)
+      return { valid: false, message: `Content must be under ${LIMITS.CONTENT_MAX} characters` };
+    return { valid: true, value: trimmed };
+  }
+
+  // ─── Modération IA avec explication détaillée ────────────────────────────
   async moderateContent(content) {
     const prompt = `You are a moderation system for an anonymous emotional support platform.
-ACCEPT: sadness, anger, fear, loneliness, despair, suicidal thoughts (cry for help), trauma, past abuse, raw but non-hateful language.
-WARNING: mentions of death/suicide → approve but flag warning:true.
-REJECT: explicit violence toward others, hate/discrimination, spam, explicit sexual content (but accept "I was sexually assaulted"), personal identifying information.
-Content: "${content.replace(/"/g, '\\"').substring(0, 800)}"
-JSON only: {"approved":true/false,"reason":"short","warning":true/false}`;
+
+RULES:
+ACCEPT: sadness, anger, fear, loneliness, despair, suicidal thoughts (cry for help), trauma, past abuse, raw but non-hateful language, grief, mental health struggles.
+WARNING (approve but flag): explicit mentions of suicide method, self-harm intent, immediate danger.
+REJECT: explicit violence toward others, hate speech / discrimination, spam / nonsense, explicit sexual content (EXCEPTION: accept "I was sexually assaulted" and similar trauma disclosures), personal identifying info (full name + address combo).
+
+If you REJECT, you MUST:
+1. Identify the exact rule violated (be specific)
+2. Quote or paraphrase the exact passage that triggered rejection (max 30 words)
+3. Explain clearly why it violates the rule
+4. Suggest how the user could rephrase to be accepted
+
+Content to moderate: """${content.replace(/"/g, '\\"').substring(0, 800)}"""
+
+Respond ONLY with valid JSON (no markdown, no explanation outside JSON):
+{
+  "approved": true/false,
+  "warning": true/false,
+  "rule_violated": "exact rule name or null",
+  "offending_passage": "the exact excerpt that caused rejection, or null",
+  "reason": "short explanation for approved content, or detailed rejection reason",
+  "suggestion": "how to rephrase/fix, or null if approved"
+}`;
 
     for (const model of GROQ_MODELS) {
       try {
         const res = await fetch('https://api.groq.com/openai/v1/chat/completions', {
           method: 'POST',
           headers: { 'Authorization': `Bearer ${process.env.GROQ_API_KEY}`, 'Content-Type': 'application/json' },
-          body: JSON.stringify({ model, messages: [{ role: 'user', content: prompt }], temperature: 0.1, max_tokens: 150 })
+          body: JSON.stringify({ model, messages: [{ role: 'user', content: prompt }], temperature: 0.1, max_tokens: 300 })
         });
         if (!res.ok) continue;
         const data = await res.json();
         const result = JSON.parse(data.choices[0].message.content.replace(/```json|```/g, '').trim());
         console.log(`✅ Moderation (${model}): ${result.approved ? 'APPROVED' : 'REJECTED'}`);
-        return { approved: result.approved, reason: result.reason, warning: result.warning || false, model };
+        if (!result.approved) {
+          console.warn(`⚠️ Rejected — rule: ${result.rule_violated} | passage: ${result.offending_passage}`);
+        }
+        return {
+          approved: result.approved,
+          reason: result.reason,
+          warning: result.warning || false,
+          rule_violated: result.rule_violated || null,
+          offending_passage: result.offending_passage || null,
+          suggestion: result.suggestion || null,
+          model
+        };
       } catch (e) {
         console.warn(`⚠️ Model ${model} failed: ${e.message}`);
         continue;
       }
     }
-    return { approved: true, reason: 'fail-open', warning: false, model: 'none' };
+    // fail-open mais on log l'incident
+    console.error('🚨 ALL moderation models failed — failing open');
+    return { approved: true, reason: 'fail-open', warning: false, rule_violated: null, offending_passage: null, suggestion: null, model: 'none' };
   }
 
   async checkPostLimit(userId) {
@@ -232,24 +332,43 @@ JSON only: {"approved":true/false,"reason":"short","warning":true/false}`;
   // ─── Auth ────────────────────────────────────────────────────────────────────
 
   async createUser(secretPhrase) {
+    const validation = this.validateSecretPhrase(secretPhrase);
+    if (!validation.valid) return { success: false, message: validation.message };
+
     const userId = this.generateId('CB');
     const now = Date.now();
+    const hash = await this.hashPhrase(validation.value);
     await this.db.execute({
       sql: 'INSERT INTO users (id, secret_phrase_hash, created_at, last_active) VALUES (?, ?, ?, ?)',
-      args: [userId, this.hashPhrase(secretPhrase), now, now]
+      args: [userId, hash, now, now]
     });
     return { success: true, userId };
   }
 
   async verifyUser(input) {
+    if (!input || typeof input !== 'string') return { success: false, message: 'Invalid input' };
+    const trimmed = input.trim();
+
     let userId = null;
-    if (input.startsWith('CB_')) {
-      const r = await this.db.execute({ sql: 'SELECT id FROM users WHERE id = ?', args: [input] });
-      if (r.rows.length > 0) userId = input;
+
+    if (trimmed.startsWith('CB_')) {
+      // Login par userId direct
+      const r = await this.db.execute({ sql: 'SELECT id FROM users WHERE id = ?', args: [trimmed] });
+      if (r.rows.length > 0) userId = trimmed;
     } else {
-      const r = await this.db.execute({ sql: 'SELECT id FROM users WHERE secret_phrase_hash = ?', args: [this.hashPhrase(input)] });
-      if (r.rows.length > 0) userId = r.rows[0].id;
+      // Login par secret phrase — on doit comparer avec bcrypt
+      // On récupère tous les users et on compare (pour une app avec peu d'users, c'est ok)
+      // Pour scaler : ajouter un index sur un hash rapide servant de pré-filtre
+      const validation = this.validateSecretPhrase(trimmed);
+      if (!validation.valid) return { success: false, message: 'Invalid ID or secret phrase' };
+
+      const r = await this.db.execute({ sql: 'SELECT id, secret_phrase_hash FROM users', args: [] });
+      for (const row of r.rows) {
+        const match = await this.verifyPhrase(validation.value, row.secret_phrase_hash);
+        if (match) { userId = row.id; break; }
+      }
     }
+
     if (userId) {
       await this.db.execute({ sql: 'UPDATE users SET last_active = ? WHERE id = ?', args: [Date.now(), userId] });
       return { success: true, userId };
@@ -257,7 +376,7 @@ JSON only: {"approved":true/false,"reason":"short","warning":true/false}`;
     return { success: false, message: 'Invalid ID or secret phrase' };
   }
 
-  // ─── Subscriptions (abonnements catégories) ───────────────────────────────
+  // ─── Subscriptions ─────────────────────────────────────────────────────────
 
   async getSubscriptions(headers) {
     const userId = headers['x-user-id'];
@@ -284,7 +403,6 @@ JSON only: {"approved":true/false,"reason":"short","warning":true/false}`;
     return { success: true, action: 'subscribed', emotion };
   }
 
-  // Notifie les abonnés quand une nouvelle confidence est publiée dans leur catégorie
   async notifySubscribers(confidenceId, emotion, authorId) {
     try {
       const subscribers = await this.db.execute({
@@ -315,13 +433,12 @@ JSON only: {"approved":true/false,"reason":"short","warning":true/false}`;
     }
   }
 
-  // Notifie l'auteur d'une confidence quand quelqu'un y répond
   async notifyConfidenceAuthor(confidenceId, responderId) {
     try {
       const conf = await this.db.execute({ sql: 'SELECT user_id FROM confidences WHERE id = ?', args: [confidenceId] });
       if (conf.rows.length === 0) return;
       const authorId = conf.rows[0].user_id;
-      if (authorId === responderId) return; // pas de notif à soi-même
+      if (authorId === responderId) return;
 
       await this.db.execute({
         sql: 'INSERT INTO notifications (id, user_id, type, message, related_id, created_at) VALUES (?, ?, ?, ?, ?, ?)',
@@ -332,7 +449,7 @@ JSON only: {"approved":true/false,"reason":"short","warning":true/false}`;
     }
   }
 
-  // ─── Notifications ────────────────────────────────────────────────────────
+  // ─── Notifications ─────────────────────────────────────────────────────────
 
   async getNotifications(headers) {
     const userId = headers['x-user-id'];
@@ -343,7 +460,6 @@ JSON only: {"approved":true/false,"reason":"short","warning":true/false}`;
       args: [userId]
     });
     const unreadCount = notifs.rows.filter(n => n.read === 0).length;
-
     return { success: true, notifications: notifs.rows, unreadCount };
   }
 
@@ -360,6 +476,10 @@ JSON only: {"approved":true/false,"reason":"short","warning":true/false}`;
     const userId = headers['x-user-id'];
     if (!userId) return { success: false, message: 'Unauthorized' };
 
+    // Validation du contenu
+    const contentValidation = this.validateContent(data.content);
+    if (!contentValidation.valid) return { success: false, message: contentValidation.message };
+
     const user = await this.db.execute({ sql: 'SELECT premium FROM users WHERE id = ?', args: [userId] });
     if (user.rows.length === 0) return { success: false, message: 'User not found' };
     const isPremium = user.rows[0].premium === 1;
@@ -367,7 +487,7 @@ JSON only: {"approved":true/false,"reason":"short","warning":true/false}`;
     if (!isPremium) {
       const postsThisWeek = await this.checkPostLimit(userId);
       if (postsThisWeek >= LIMITS.POST_PER_WEEK) {
-        return { success: false, limitType: 'weekly_post', message: `You've already shared your confidence this week. Next reset: ${this.getNextWeekReset()}.` };
+        return { success: false, limitType: 'weekly_post', message: `You've reached ${LIMITS.POST_PER_WEEK} posts this week. Next reset: ${this.getNextWeekReset()}.` };
       }
       const count = await this.db.execute({ sql: 'SELECT COUNT(*) as c FROM confidences WHERE user_id = ? AND expires_at > ?', args: [userId, Date.now()] });
       if (count.rows[0].c >= LIMITS.FREE_MAX_CONFIDENCES) {
@@ -375,21 +495,29 @@ JSON only: {"approved":true/false,"reason":"short","warning":true/false}`;
       }
     }
 
-    const moderation = await this.moderateContent(data.content);
-    if (!moderation.approved) return { success: false, limitType: 'moderation', message: 'Content rejected', reason: moderation.reason };
+    const moderation = await this.moderateContent(contentValidation.value);
+    if (!moderation.approved) {
+      return {
+        success: false,
+        limitType: 'moderation',
+        message: 'Your content was not published.',
+        rule_violated: moderation.rule_violated,
+        offending_passage: moderation.offending_passage,
+        reason: moderation.reason,
+        suggestion: moderation.suggestion
+      };
+    }
 
     const confId = this.generateId('conf');
     const now = Date.now();
     const expiresAt = isPremium ? now + LIMITS.PREMIUM_EXPIRY_DAYS * 86400000 : now + LIMITS.CONFIDENCE_EXPIRY_DAYS * 86400000;
 
     await this.db.execute({
-      sql: 'INSERT INTO confidences (id, user_id, content, emotion, moderation_score, moderation_message, needs_review, created_at, expires_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)',
-      args: [confId, userId, data.content, data.emotion, 1.0, moderation.reason, moderation.warning ? 1 : 0, now, expiresAt]
+      sql: 'INSERT INTO confidences (id, user_id, content, emotion, moderation_score, moderation_message, needs_review, edit_count, created_at, expires_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)',
+      args: [confId, userId, contentValidation.value, data.emotion, 1.0, moderation.reason, moderation.warning ? 1 : 0, 0, now, expiresAt]
     });
 
-    // Notifier les abonnés de cette catégorie (en arrière-plan)
     this.notifySubscribers(confId, data.emotion, userId);
-
     return { success: true, confidenceId: confId, warning: moderation.warning };
   }
 
@@ -446,15 +574,44 @@ JSON only: {"approved":true/false,"reason":"short","warning":true/false}`;
   async updateConfidence(id, data, headers) {
     const userId = headers['x-user-id'];
     if (!userId) return { success: false, message: 'Unauthorized' };
-    const conf = await this.db.execute({ sql: 'SELECT user_id FROM confidences WHERE id = ?', args: [id] });
-    if (conf.rows.length === 0 || conf.rows[0].user_id !== userId) return { success: false, message: 'Not authorized' };
-    const moderation = await this.moderateContent(data.content);
-    if (!moderation.approved) return { success: false, message: 'Content rejected', reason: moderation.reason };
+
+    // Validation du contenu
+    const contentValidation = this.validateContent(data.content);
+    if (!contentValidation.valid) return { success: false, message: contentValidation.message };
+
+    const conf = await this.db.execute({ sql: 'SELECT user_id, edit_count FROM confidences WHERE id = ?', args: [id] });
+    if (conf.rows.length === 0 || conf.rows[0].user_id !== userId)
+      return { success: false, message: 'Not authorized' };
+
+    const currentEditCount = conf.rows[0].edit_count || 0;
+    if (currentEditCount >= 3) {
+      return { success: false, limitType: 'edit_limit', message: 'You have reached the maximum of 3 edits for this post.' };
+    }
+
+    const moderation = await this.moderateContent(contentValidation.value);
+    if (!moderation.approved) {
+      return {
+        success: false,
+        limitType: 'moderation',
+        message: 'Your edit was not saved.',
+        rule_violated: moderation.rule_violated,
+        offending_passage: moderation.offending_passage,
+        reason: moderation.reason,
+        suggestion: moderation.suggestion
+      };
+    }
+
     await this.db.execute({
-      sql: 'UPDATE confidences SET content = ?, emotion = ?, moderation_message = ? WHERE id = ?',
-      args: [data.content, data.emotion, moderation.reason, id]
+      sql: 'UPDATE confidences SET content = ?, emotion = ?, moderation_message = ?, edit_count = edit_count + 1 WHERE id = ?',
+      args: [contentValidation.value, data.emotion, moderation.reason, id]
     });
-    return { success: true, warning: moderation.warning };
+
+    const newEditCount = currentEditCount + 1;
+    return {
+      success: true,
+      warning: moderation.warning,
+      editsRemaining: 3 - newEditCount
+    };
   }
 
   async deleteConfidence(id, headers) {
@@ -496,6 +653,10 @@ JSON only: {"approved":true/false,"reason":"short","warning":true/false}`;
     const userId = headers['x-user-id'];
     if (!userId) return { success: false, message: 'Unauthorized' };
 
+    // Validation du contenu
+    const contentValidation = this.validateContent(data.content);
+    if (!contentValidation.valid) return { success: false, message: contentValidation.message };
+
     const user = await this.db.execute({ sql: 'SELECT premium FROM users WHERE id = ?', args: [userId] });
     if (user.rows.length === 0) return { success: false, message: 'User not found' };
     const isPremium = user.rows[0].premium === 1;
@@ -507,17 +668,26 @@ JSON only: {"approved":true/false,"reason":"short","warning":true/false}`;
       }
     }
 
-    const moderation = await this.moderateContent(data.content);
-    if (!moderation.approved) return { success: false, limitType: 'moderation', message: 'Content rejected', reason: moderation.reason };
+    const moderation = await this.moderateContent(contentValidation.value);
+    if (!moderation.approved) {
+      return {
+        success: false,
+        limitType: 'moderation',
+        message: 'Your reply was not sent.',
+        rule_violated: moderation.rule_violated,
+        offending_passage: moderation.offending_passage,
+        reason: moderation.reason,
+        suggestion: moderation.suggestion
+      };
+    }
 
     const responseId = this.generateId('resp');
     const avatar = AVATARS[Math.floor(Math.random() * AVATARS.length)];
     await this.db.execute({
       sql: 'INSERT INTO responses (id, confidence_id, user_id, content, avatar, moderation_score, created_at) VALUES (?, ?, ?, ?, ?, ?, ?)',
-      args: [responseId, data.confidenceId, userId, data.content, avatar, 1.0, Date.now()]
+      args: [responseId, data.confidenceId, userId, contentValidation.value, avatar, 1.0, Date.now()]
     });
 
-    // Notifier l'auteur de la confidence (en arrière-plan)
     this.notifyConfidenceAuthor(data.confidenceId, userId);
 
     const commentsLeft = isPremium ? 999 : Math.max(0, LIMITS.COMMENTS_PER_WEEK - (await this.checkCommentLimit(userId)));
@@ -557,7 +727,7 @@ JSON only: {"approved":true/false,"reason":"short","warning":true/false}`;
 
     const [confidences, totalReactions, totalResponses, helpedCount, emotionStats, subscriptions] = await Promise.all([
       this.db.execute({
-        sql: `SELECT c.id, c.content, c.emotion, c.created_at, c.expires_at,
+        sql: `SELECT c.id, c.content, c.emotion, c.created_at, c.expires_at, c.edit_count,
             (SELECT COUNT(*) FROM reactions WHERE confidence_id = c.id) as reaction_count,
             (SELECT COUNT(*) FROM responses WHERE confidence_id = c.id) as response_count
           FROM confidences c WHERE c.user_id = ? ORDER BY c.created_at DESC`,
@@ -645,10 +815,14 @@ JSON only: {"approved":true/false,"reason":"short","warning":true/false}`;
     if (!userId) return { success: false, message: 'Unauthorized' };
     const user = await this.db.execute({ sql: 'SELECT premium FROM users WHERE id = ?', args: [userId] });
     if (user.rows.length === 0 || user.rows[0].premium !== 1) return { success: false, message: 'Premium required', limitType: 'premium' };
+
+    const contentValidation = this.validateContent(data.content);
+    if (!contentValidation.valid) return { success: false, message: contentValidation.message };
+
     const entryId = this.generateId('jrn');
     await this.db.execute({
       sql: 'INSERT INTO journal_entries (id, user_id, content, mood, created_at) VALUES (?, ?, ?, ?, ?)',
-      args: [entryId, userId, data.content, data.mood || null, Date.now()]
+      args: [entryId, userId, contentValidation.value, data.mood || null, Date.now()]
     });
     return { success: true, entryId };
   }
@@ -714,15 +888,13 @@ JSON only: {"approved":true/false,"reason":"short","warning":true/false}`;
   }
 
   async activatePremium(userId, type, headers) {
-    const adminKey = headers['x-admin-key'];
-    if (adminKey !== process.env.ADMIN_KEY) return { success: false, message: 'Unauthorized' };
+    if (!this.verifyAdminKey(headers['x-admin-key'])) return { success: false, message: 'Unauthorized' };
     const now = Date.now();
     const durationMs = type === 'yearly' ? 365 * 86400000 : 30 * 86400000;
     await this.db.execute({
       sql: 'UPDATE users SET premium = 1, premium_type = ?, premium_start = ?, premium_end = ? WHERE id = ?',
       args: [type, now, now + durationMs, userId]
     });
-    // Notifier l'utilisateur
     await this.db.execute({
       sql: 'INSERT INTO notifications (id, user_id, type, message, created_at) VALUES (?, ?, ?, ?, ?)',
       args: [this.generateId('notif'), userId, 'premium_activated', `🎉 Your Premium ${type} subscription is now active!`, now]
@@ -731,8 +903,7 @@ JSON only: {"approved":true/false,"reason":"short","warning":true/false}`;
   }
 
   async deactivatePremium(userId, headers) {
-    const adminKey = headers['x-admin-key'];
-    if (adminKey !== process.env.ADMIN_KEY) return { success: false, message: 'Unauthorized' };
+    if (!this.verifyAdminKey(headers['x-admin-key'])) return { success: false, message: 'Unauthorized' };
     await this.db.execute({ sql: 'UPDATE users SET premium = 0, premium_type = NULL, premium_end = NULL WHERE id = ?', args: [userId] });
     return { success: true };
   }
@@ -745,10 +916,10 @@ JSON only: {"approved":true/false,"reason":"short","warning":true/false}`;
   // ─── Maintenance ──────────────────────────────────────────────────────────
 
   async cleanExpiredConfidences() {
-    await this.db.execute({ sql: 'DELETE FROM confidences WHERE expires_at < ?', args: [Date.now()] });
-    // Nettoyer les notifs lues de plus de 30 jours
+    const result = await this.db.execute({ sql: 'DELETE FROM confidences WHERE expires_at < ?', args: [Date.now()] });
     await this.db.execute({ sql: 'DELETE FROM notifications WHERE read = 1 AND created_at < ?', args: [Date.now() - 30 * 86400000] });
-    console.log('🧹 Cleanup done');
+    console.log(`🧹 Cleanup done — removed expired confidences`);
+    return result;
   }
 
   async healthCheck() {
