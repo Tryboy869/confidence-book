@@ -4,9 +4,12 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Settings — Confidence Book</title>
+  <link rel="manifest" href="/manifest.json">
+  <meta name="theme-color" content="#7c3aed">
+  <script src="https://unpkg.com/i18next@23/dist/umd/i18next.min.js"></script>
+  <script src="/translations.js"></script>
   <script src="https://cdn.tailwindcss.com"></script>
   <script src="https://unpkg.com/lucide@latest"></script>
-  <script src="/assets/translations.js"></script>
   <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
   <style>
     * { font-family: 'DM Sans', sans-serif; box-sizing: border-box; }
@@ -24,6 +27,8 @@
     .copy-btn { padding: 14px 16px; background: #7c3aed; color: white; border: none; border-radius: 12px; cursor: pointer; transition: all 0.2s; flex-shrink: 0; }
     .copy-btn:hover { background: #6d28d9; }
     .copy-btn.copied { background: #10b981; }
+    .btn-install { width: 100%; padding: 14px; border-radius: 12px; background: linear-gradient(135deg, #7c3aed, #a78bfa); color: white; font-weight: 700; border: none; cursor: pointer; transition: all 0.2s; display: flex; align-items: center; justify-content: center; gap: 8px; font-size: 0.95rem; }
+    .btn-install:hover { opacity: 0.9; }
     .btn-logout { width: 100%; padding: 14px; border-radius: 12px; background: #7c3aed20; border: 1px solid #7c3aed30; color: #a78bfa; font-weight: 600; cursor: pointer; transition: all 0.2s; display: flex; align-items: center; justify-content: center; gap: 8px; }
     .btn-logout:hover { background: #7c3aed30; }
     .btn-danger { width: 100%; padding: 14px; border-radius: 12px; background: #ef444415; border: 1px solid #ef444430; color: #ef4444; font-weight: 600; cursor: pointer; transition: all 0.2s; display: flex; align-items: center; justify-content: center; gap: 8px; }
@@ -47,9 +52,19 @@
 
   <div class="max-w-xl mx-auto px-4 py-6 space-y-4">
 
-    <!-- Language — INSTANT, no reload -->
+    <!-- Install PWA -->
+    <div class="card" id="install-section" style="display:none">
+      <p class="section-title" data-i18n="settings.install_title">Install the app</p>
+      <p class="text-xs text-gray-500 mb-4" data-i18n="settings.install_desc">Add Confidence Book to your home screen for quick access</p>
+      <button onclick="installPWA()" class="btn-install">
+        <i data-lucide="download" class="w-5 h-5"></i>
+        <span data-i18n="settings.install_btn">Install Confidence Book</span>
+      </button>
+    </div>
+
+    <!-- Language -->
     <div class="card">
-      <p class="section-title" data-i18n="settings.language_title">Language</p>
+      <p class="section-title" data-i18n="settings.language">Language</p>
       <div class="flex gap-3">
         <button onclick="selectLanguage('en')" id="lang-en-btn" class="option-btn active">🇬🇧 English</button>
         <button onclick="selectLanguage('fr')" id="lang-fr-btn" class="option-btn">🇫🇷 Français</button>
@@ -58,8 +73,8 @@
 
     <!-- Avatar -->
     <div class="card">
-      <p class="section-title" data-i18n="settings.avatar_title">Avatar</p>
-      <p class="text-xs text-gray-500 mb-4" data-i18n="settings.avatar_description">Your anonymous identity icon</p>
+      <p class="section-title" data-i18n="settings.avatar">Avatar</p>
+      <p class="text-xs text-gray-500 mb-4" data-i18n="settings.avatar_desc">Your anonymous identity icon</p>
       <div class="grid grid-cols-4 gap-3">
         <button onclick="selectAvatar('moon')" class="avatar-btn" data-avatar="moon"><span class="text-2xl">🌙</span></button>
         <button onclick="selectAvatar('sun')" class="avatar-btn" data-avatar="sun"><span class="text-2xl">☀️</span></button>
@@ -86,18 +101,18 @@
 
     <!-- Account -->
     <div class="card space-y-3">
-      <p class="section-title">Account</p>
+      <p class="section-title" data-i18n="settings.account">Account</p>
       <button onclick="logout()" class="btn-logout">
         <i data-lucide="log-out" class="w-5 h-5"></i>
         <span data-i18n="settings.logout">Log out</span>
       </button>
       <button onclick="deleteAccount()" class="btn-danger">
         <i data-lucide="trash-2" class="w-5 h-5"></i>
-        <span data-i18n="settings.delete_account">Delete my account</span>
+        <span data-i18n="settings.delete">Delete my account</span>
       </button>
     </div>
 
-    <p class="text-center text-xs text-gray-600 pb-4">Confidence Book · Dark mode · Anonymous forever</p>
+    <p class="text-center text-xs text-gray-600 pb-4">Confidence Book · Anonymous forever</p>
   </div>
 
   <div id="toast" class="toast"></div>
@@ -108,89 +123,108 @@
 
     document.getElementById('user-id-display').textContent = userId;
 
-    // Settings state
-    let currentSettings = {
-      theme: 'dark',
-      avatar: localStorage.getItem('confidenceBookAvatar') || 'moon',
-      language: getCurrentLanguage()
-    };
+    // ── PWA Install ───────────────────────────────────────────────────────────
+    let deferredPrompt = null;
 
-    // ── Init ──────────────────────────────────────────────────────────────────
+    window.addEventListener('beforeinstallprompt', (e) => {
+      e.preventDefault();
+      deferredPrompt = e;
+      document.getElementById('install-section').style.display = 'block';
+    });
 
+    window.addEventListener('appinstalled', () => {
+      deferredPrompt = null;
+      document.getElementById('install-section').style.display = 'none';
+    });
+
+    async function installPWA() {
+      if (!deferredPrompt) {
+        showToast('App already installed or not available on this browser');
+        return;
+      }
+      deferredPrompt.prompt();
+      const { outcome } = await deferredPrompt.userChoice;
+      if (outcome === 'accepted') showToast('🎉 App installed!');
+      deferredPrompt = null;
+    }
+
+    // Register SW
+    if ('serviceWorker' in navigator) {
+      navigator.serviceWorker.register('/sw.js').catch(() => {});
+    }
+
+    // ── Language ──────────────────────────────────────────────────────────────
+    function selectLanguage(lang) {
+      setLanguage(lang); // from translations.js — instant, no reload
+      document.getElementById('lang-en-btn').classList.toggle('active', lang === 'en');
+      document.getElementById('lang-fr-btn').classList.toggle('active', lang === 'fr');
+      saveSettings();
+      showToast(t('settings.saved'));
+    }
+
+    // Sync lang buttons with current language on load
+    window.addEventListener('langchange', (e) => {
+      const lang = e.detail.lang;
+      document.getElementById('lang-en-btn').classList.toggle('active', lang === 'en');
+      document.getElementById('lang-fr-btn').classList.toggle('active', lang === 'fr');
+    });
+
+    // ── Avatar ────────────────────────────────────────────────────────────────
+    let currentAvatar = localStorage.getItem('confidenceBookAvatar') || 'moon';
+
+    function selectAvatar(avatar) {
+      currentAvatar = avatar;
+      localStorage.setItem('confidenceBookAvatar', avatar);
+      document.querySelectorAll('.avatar-btn').forEach(btn => {
+        btn.classList.toggle('active', btn.dataset.avatar === avatar);
+      });
+      saveSettings();
+      showToast(t('settings.saved'));
+    }
+
+    function applyAvatarUI() {
+      document.querySelectorAll('.avatar-btn').forEach(btn => {
+        btn.classList.toggle('active', btn.dataset.avatar === currentAvatar);
+      });
+    }
+
+    // ── Lang buttons init ─────────────────────────────────────────────────────
+    function initLangButtons() {
+      const lang = getCurrentLanguage();
+      document.getElementById('lang-en-btn').classList.toggle('active', lang === 'en');
+      document.getElementById('lang-fr-btn').classList.toggle('active', lang === 'fr');
+    }
+
+    // ── Save to DB ────────────────────────────────────────────────────────────
+    async function saveSettings() {
+      try {
+        await fetch('/api/settings', {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json', 'X-User-ID': userId },
+          body: JSON.stringify({ theme: 'dark', avatar: currentAvatar, language: getCurrentLanguage() })
+        });
+      } catch (e) {}
+    }
+
+    // ── Load from DB ──────────────────────────────────────────────────────────
     async function loadSettings() {
       try {
         const res = await fetch('/api/profile', { headers: { 'X-User-ID': userId } });
         const data = await res.json();
         if (data.success && data.profile.settings) {
           const s = data.profile.settings;
-          // Avatar sync : DB wins only if localStorage is empty
           if (!localStorage.getItem('confidenceBookAvatar') && s.avatar) {
-            currentSettings.avatar = s.avatar;
+            currentAvatar = s.avatar;
             localStorage.setItem('confidenceBookAvatar', s.avatar);
-          } else {
-            currentSettings.avatar = localStorage.getItem('confidenceBookAvatar') || 'moon';
           }
-          // Language : localStorage ALWAYS wins — DB never overwrites user choice
-          currentSettings.language = getCurrentLanguage();
+          // Language: localStorage always wins over DB
         }
       } catch (e) {}
-      applyUI();
-    }
-
-    function applyUI() {
-      const lang = currentSettings.language;
-
-      // Language buttons
-      document.getElementById('lang-en-btn').classList.toggle('active', lang === 'en');
-      document.getElementById('lang-fr-btn').classList.toggle('active', lang === 'fr');
-
-      // Avatar buttons
-      document.querySelectorAll('.avatar-btn').forEach(btn => {
-        btn.classList.toggle('active', btn.dataset.avatar === currentSettings.avatar);
-      });
-
-      lucide.createIcons();
-    }
-
-    // ── Language — INSTANT, no reload ─────────────────────────────────────────
-
-    function selectLanguage(lang) {
-      currentSettings.language = lang;
-      // 1. Save to localStorage immediately
-      localStorage.setItem('confidenceBookLanguage', lang);
-      // 2. Apply translations to DOM instantly — no reload
-      applyTranslations(lang);
-      // 3. Update button states
-      applyUI();
-      // 4. Save to DB in background
-      saveSettings();
-      showToast(t('settings.saved'));
-    }
-
-    // ── Avatar ────────────────────────────────────────────────────────────────
-
-    function selectAvatar(avatar) {
-      currentSettings.avatar = avatar;
-      localStorage.setItem('confidenceBookAvatar', avatar);
-      applyUI();
-      saveSettings();
-      showToast(t('settings.saved'));
-    }
-
-    // ── Save to DB ────────────────────────────────────────────────────────────
-
-    async function saveSettings() {
-      try {
-        await fetch('/api/settings', {
-          method: 'PUT',
-          headers: { 'Content-Type': 'application/json', 'X-User-ID': userId },
-          body: JSON.stringify(currentSettings)
-        });
-      } catch (e) {}
+      applyAvatarUI();
+      initLangButtons();
     }
 
     // ── Copy ID ───────────────────────────────────────────────────────────────
-
     function copyId() {
       navigator.clipboard.writeText(userId).then(() => {
         const btn = document.getElementById('copy-btn');
@@ -207,7 +241,6 @@
     }
 
     // ── Account ───────────────────────────────────────────────────────────────
-
     function logout() {
       localStorage.removeItem('confidenceBookUserID');
       location.href = '/welcome.html';
@@ -215,17 +248,12 @@
 
     function deleteAccount() {
       if (!confirm(t('settings.delete_confirm'))) return;
-      fetch('/api/account', {
-        method: 'DELETE',
-        headers: { 'X-User-ID': userId }
-      }).then(() => {
-        localStorage.clear();
-        location.href = '/welcome.html';
-      }).catch(() => alert(t('common.error')));
+      fetch('/api/account', { method: 'DELETE', headers: { 'X-User-ID': userId } })
+        .then(() => { localStorage.clear(); location.href = '/welcome.html'; })
+        .catch(() => alert(t('common.error')));
     }
 
     // ── Toast ─────────────────────────────────────────────────────────────────
-
     function showToast(msg) {
       const toast = document.getElementById('toast');
       toast.textContent = `✓ ${msg}`;
@@ -233,7 +261,6 @@
       setTimeout(() => toast.classList.remove('show'), 2000);
     }
 
-    // ── Start ─────────────────────────────────────────────────────────────────
     loadSettings();
     lucide.createIcons();
   </script>
