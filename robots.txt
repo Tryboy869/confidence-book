@@ -1,0 +1,21 @@
+User-agent: *
+Allow: /
+
+# Pages publiques indexables
+Allow: /welcome.html
+Allow: /auth.html
+Allow: /premium.html
+Allow: /support.html
+
+# Pages privées — ne pas indexer
+Disallow: /feed.html
+Disallow: /post.html
+Disallow: /profile.html
+Disallow: /settings.html
+Disallow: /admin.html
+Disallow: /confidence.html
+
+# API — jamais indexée
+Disallow: /api/
+
+Sitemap: https://confidence-book-p9wg.onrender.com/sitemap.xml
