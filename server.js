@@ -16,8 +16,8 @@ const AVATARS = ['moon', 'sun', 'leaf', 'flower', 'butterfly', 'wave', 'sparkles
 
 const LIMITS = {
   FREE_MAX_CONFIDENCES: 20,
-  POST_PER_WEEK: 1,
-  COMMENTS_PER_DAY: 3,
+  POST_PER_WEEK: 3,
+  COMMENTS_PER_WEEK: 9,
   CONFIDENCE_EXPIRY_DAYS: 90,
   PREMIUM_EXPIRY_DAYS: 36500
 };
@@ -216,16 +216,12 @@ JSON only: {"approved":true/false,"reason":"short","warning":true/false}`;
   }
 
   async checkCommentLimit(userId) {
-    const r = await this.db.execute({ sql: 'SELECT COUNT(*) as c FROM responses WHERE user_id = ? AND created_at > ?', args: [userId, Date.now() - 86400000] });
+    const r = await this.db.execute({ sql: 'SELECT COUNT(*) as c FROM responses WHERE user_id = ? AND created_at > ?', args: [userId, Date.now() - 7 * 86400000] });
     return r.rows[0].c;
   }
 
   getNextWeekReset() {
     return new Date(Date.now() + 7 * 86400000).toLocaleDateString('en-GB', { day: 'numeric', month: 'long' });
-  }
-
-  getNextDayReset() {
-    return new Date(Date.now() + 86400000).toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' });
   }
 
   getWeeklyPrompt() {
@@ -505,9 +501,9 @@ JSON only: {"approved":true/false,"reason":"short","warning":true/false}`;
     const isPremium = user.rows[0].premium === 1;
 
     if (!isPremium) {
-      const commentsToday = await this.checkCommentLimit(userId);
-      if (commentsToday >= LIMITS.COMMENTS_PER_DAY) {
-        return { success: false, limitType: 'daily_comment', message: `You've reached your ${LIMITS.COMMENTS_PER_DAY} comments limit for today. Resets at ${this.getNextDayReset()}.` };
+      const commentsThisWeek = await this.checkCommentLimit(userId);
+      if (commentsThisWeek >= LIMITS.COMMENTS_PER_WEEK) {
+        return { success: false, limitType: 'weekly_comment', message: `You've reached your ${LIMITS.COMMENTS_PER_WEEK} comments limit for this week. Resets on ${this.getNextWeekReset()}.` };
       }
     }
 
@@ -524,7 +520,7 @@ JSON only: {"approved":true/false,"reason":"short","warning":true/false}`;
     // Notifier l'auteur de la confidence (en arrière-plan)
     this.notifyConfidenceAuthor(data.confidenceId, userId);
 
-    const commentsLeft = isPremium ? 999 : Math.max(0, LIMITS.COMMENTS_PER_DAY - (await this.checkCommentLimit(userId)));
+    const commentsLeft = isPremium ? 999 : Math.max(0, LIMITS.COMMENTS_PER_WEEK - (await this.checkCommentLimit(userId)));
     return { success: true, responseId, commentsLeft };
   }
 
@@ -593,7 +589,7 @@ JSON only: {"approved":true/false,"reason":"short","warning":true/false}`;
     }
 
     const isPremium = user.rows[0].premium === 1;
-    const [postsThisWeek, commentsToday] = await Promise.all([this.checkPostLimit(userId), this.checkCommentLimit(userId)]);
+    const [postsThisWeek, commentsThisWeek] = await Promise.all([this.checkPostLimit(userId), this.checkCommentLimit(userId)]);
 
     let settings = {};
     try { settings = JSON.parse(user.rows[0].settings || '{}'); } catch { settings = { theme: 'dark', avatar: 'moon', language: 'en' }; }
@@ -616,12 +612,12 @@ JSON only: {"approved":true/false,"reason":"short","warning":true/false}`;
           postsThisWeek,
           postLimitPerWeek: LIMITS.POST_PER_WEEK,
           canPost: isPremium || postsThisWeek < LIMITS.POST_PER_WEEK,
-          commentsToday,
-          commentLimitPerDay: LIMITS.COMMENTS_PER_DAY,
-          canComment: isPremium || commentsToday < LIMITS.COMMENTS_PER_DAY,
-          commentsLeft: isPremium ? 999 : Math.max(0, LIMITS.COMMENTS_PER_DAY - commentsToday),
+          commentsThisWeek,
+          commentLimitPerWeek: LIMITS.COMMENTS_PER_WEEK,
+          canComment: isPremium || commentsThisWeek < LIMITS.COMMENTS_PER_WEEK,
+          commentsLeft: isPremium ? 999 : Math.max(0, LIMITS.COMMENTS_PER_WEEK - commentsThisWeek),
           nextPostReset: this.getNextWeekReset(),
-          nextCommentReset: this.getNextDayReset()
+          nextCommentReset: this.getNextWeekReset()
         },
         confidences: confidences.rows
       }
