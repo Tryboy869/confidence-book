@@ -45,8 +45,18 @@ export class BackendService {
       url: process.env.DATABASE_URL,
       authToken: process.env.DATABASE_AUTH_TOKEN
     });
-    await this.migrate();
-    if (process.env.RESET_DB === 'true') await this.resetDatabase();
+
+    // ⚠️ RESET_DB ne doit jamais tourner en production automatiquement.
+    // Utiliser scripts/reset-db.js manuellement si besoin.
+    const shouldReset = process.env.RESET_DB === 'true'
+      && process.env.NODE_ENV !== 'production';
+
+    if (shouldReset) {
+      console.warn('⚠️ RESET_DB=true détecté — reset de la base (NODE_ENV !== production)');
+      await this.resetDatabase(); // inclut migrate()
+    } else {
+      await this.migrate(); // safe : CREATE TABLE IF NOT EXISTS
+    }
   }
 
   async migrate() {
