@@ -1,0 +1,11 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <meta http-equiv="refresh" content="0; url=/welcome.html">
+  <title>Confidence Book</title>
+</head>
+<body>
+  <script>window.location.replace('/welcome.html');</script>
+</body>
+</html>
