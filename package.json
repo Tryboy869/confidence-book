@@ -2,11 +2,11 @@
   "name": "confidence-book",
   "version": "1.0.0",
   "description": "Plateforme de soutien émotionnel anonyme",
-  "main": "api.js",
+  "main": "api/index.js",
   "type": "module",
   "scripts": {
-    "start": "node api.js",
-    "dev": "node --watch api.js",
+    "start": "node api/index.js",
+    "dev": "node --watch api/index.js",
     "reset-db": "node scripts/reset-db.js"
   },
   "keywords": ["support", "mental-health", "anonymous"],
