@@ -10,6 +10,7 @@
   <script src="/translations.js"></script>
   <script src="https://cdn.tailwindcss.com"></script>
   <script src="https://unpkg.com/lucide@latest"></script>
+  <script src="/db-sync.js"></script>
   <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
   <style>
     * { font-family: 'DM Sans', sans-serif; box-sizing: border-box; }
@@ -241,16 +242,20 @@
     }
 
     // ── Account ───────────────────────────────────────────────────────────────
-    function logout() {
+    async function logout() {
+      await CB.clearAll().catch(() => {});
       localStorage.removeItem('confidenceBookUserID');
       location.href = '/welcome.html';
     }
 
-    function deleteAccount() {
+    async function deleteAccount() {
       if (!confirm(t('settings.delete_confirm'))) return;
-      fetch('/api/account', { method: 'DELETE', headers: { 'X-User-ID': userId } })
-        .then(() => { localStorage.clear(); location.href = '/welcome.html'; })
-        .catch(() => alert(t('common.error')));
+      try {
+        await fetch('/api/account', { method: 'DELETE', headers: { 'X-User-ID': userId } });
+        await CB.clearAll().catch(() => {});
+        localStorage.clear();
+        location.href = '/welcome.html';
+      } catch { alert(t('common.error')); }
     }
 
     // ── Toast ─────────────────────────────────────────────────────────────────
