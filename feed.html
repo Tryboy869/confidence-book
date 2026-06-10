@@ -239,6 +239,7 @@
     </div>
   </div>
 
+  <script src="/db-sync.js"></script>
   <script>
     const userId = localStorage.getItem('confidenceBookUserID');
     if (!userId) location.href = '/auth.html';
@@ -257,43 +258,45 @@
       traumas:      { emoji: '🔥', label: 'Trauma',        color: '#f97316' },
       stress:       { emoji: '🧠', label: 'Stress',        color: '#8b5cf6' },
       spiritualite: { emoji: '🪞', label: 'Spirituality',  color: '#6366f1' },
-      espoir:       { emoji: '🤝', label: 'Hope',          color: '#10b981' }
+      espoir:       { emoji: '🤝', label: 'Hope',          color: '#10b981' },
     };
 
-    // ── Init ──────────────────────────────────────────────────────────────────
+    // ── Init ─────────────────────────────────────────────────────────────────
     async function init() {
-      await Promise.all([loadUserData(), loadWeeklyPrompt(), loadFeed(1, false), loadNotifications()]);
+      // Register update listener — re-render when IDB changes
+      CB.onUpdate(() => {
+        renderFeedFromIDB();
+        loadNotificationsFromIDB();
+      });
+
+      // Init IDB (full load or delta sync)
+      await CB.init();
+
+      // Load user profile + subscriptions from server (lightweight)
+      loadUserLimits();
+      loadWeeklyPrompt();
     }
 
-    async function loadUserData() {
+    async function loadUserLimits() {
       try {
-        const [profileRes, subRes] = await Promise.all([
-          fetch('/api/profile', { headers: { 'X-User-ID': userId } }),
-          fetch('/api/subscriptions', { headers: { 'X-User-ID': userId } })
-        ]);
-        const profileData = await profileRes.json();
-        const subData = await subRes.json();
-
-        if (profileData.success) {
-          const limits = profileData.profile.limits;
-          if (!limits.canPost) {
-            document.getElementById('limit-banner').classList.remove('hidden');
-            document.getElementById('limit-msg').textContent = `⏳ You've shared ${limits.postLimitPerWeek} times this week. Next reset: ${limits.nextPostReset}`;
-            document.getElementById('compose-tag').textContent = `${limits.postLimitPerWeek}/week`;
-            document.getElementById('compose-area').style.opacity = '0.5';
-            document.getElementById('compose-area').style.cursor = 'default';
-            document.getElementById('compose-area').onclick = null;
-          } else {
-            const left = limits.postLimitPerWeek - limits.postsThisWeek;
-            document.getElementById('compose-tag').textContent = `${left} left this week`;
-          }
+        const res = await fetch('/api/profile', { headers: { 'X-User-ID': userId } });
+        const data = await res.json();
+        if (!data.success) return;
+        const limits = data.profile.limits;
+        if (!limits.canPost) {
+          document.getElementById('limit-banner').classList.remove('hidden');
+          document.getElementById('limit-msg').textContent = `⏳ ${limits.postLimitPerWeek} posts/week limit reached. Resets: ${limits.nextPostReset}`;
+          document.getElementById('compose-tag').textContent = `${limits.postLimitPerWeek}/week`;
+          document.getElementById('compose-area').style.opacity = '0.5';
+          document.getElementById('compose-area').style.cursor = 'default';
+          document.getElementById('compose-area').onclick = null;
+        } else {
+          const left = limits.postLimitPerWeek - limits.postsThisWeek;
+          document.getElementById('compose-tag').textContent = `${left} left this week`;
         }
-
-        if (subData.success) {
-          userSubscriptions = subData.subscriptions;
-          updateSubscriptionPills();
-        }
-      } catch (e) {}
+        userSubscriptions = data.profile.subscriptions || [];
+        updateSubscriptionPills();
+      } catch {}
     }
 
     async function loadWeeklyPrompt() {
@@ -304,41 +307,58 @@
           document.getElementById('prompt-text').textContent = data.prompt.en;
           document.getElementById('weekly-prompt').classList.remove('hidden');
         }
-      } catch (e) {}
+      } catch {}
     }
 
-    // ── Notifications ─────────────────────────────────────────────────────────
-    async function loadNotifications() {
-      try {
-        const res = await fetch('/api/notifications', { headers: { 'X-User-ID': userId } });
-        const data = await res.json();
-        if (!data.success) return;
+    // ── Render feed from IndexedDB ───────────────────────────────────────────
+    async function renderFeedFromIDB() {
+      const { confidences, pagination } = await CB.getFeed(currentFilter, currentPage);
+      const container = document.getElementById('feed-container');
 
-        const badge = document.getElementById('notif-badge');
-        if (data.unreadCount > 0) {
-          badge.classList.remove('hidden');
-          badge.textContent = data.unreadCount > 9 ? '9+' : data.unreadCount;
-        } else {
-          badge.classList.add('hidden');
-        }
+      if (confidences.length === 0 && currentPage === 1) {
+        container.innerHTML = `
+          <div class="text-center py-16 text-gray-500">
+            <p class="text-4xl mb-3">🌱</p>
+            <p class="font-medium">No confidences yet in this category.</p>
+            <p class="text-sm mt-1">Be the first to share.</p>
+          </div>`;
+        document.getElementById('load-more-container').classList.add('hidden');
+        return;
+      }
 
-        const list = document.getElementById('notif-list');
-        if (data.notifications.length === 0) {
-          list.innerHTML = '<p class="text-center text-gray-500 text-sm py-6">No notifications yet</p>';
-          return;
-        }
+      const html = confidences.map(renderCard).join('');
+      if (currentPage === 1) container.innerHTML = html;
+      else container.insertAdjacentHTML('beforeend', html);
+      lucide.createIcons();
 
-        list.innerHTML = data.notifications.map(n => `
-          <div class="flex items-start gap-3 p-3 rounded-xl transition ${n.read ? '' : 'bg-purple-500/5'} hover:bg-white/3 cursor-pointer"
-               onclick="n.related_id && (location.href='/post.html?id=${n.related_id}')">
-            <span class="text-lg flex-shrink-0">${n.type === 'new_confidence' ? '🔔' : n.type === 'new_response' ? '💬' : n.type === 'premium_activated' ? '👑' : '✨'}</span>
-            <div class="flex-1 min-w-0">
-              <p class="text-sm text-gray-200 ${n.read ? '' : 'font-semibold'}">${n.message}</p>
-              <p class="text-xs text-gray-500 mt-0.5">${timeAgo(n.created_at)}</p>
-            </div>
-            ${!n.read ? '<div class="w-2 h-2 rounded-full bg-purple-400 flex-shrink-0 mt-1.5"></div>' : ''}
-          </div>`).join('');
-      } catch (e) {}
+      const lm = document.getElementById('load-more-container');
+      if (pagination.hasMore) lm.classList.remove('hidden');
+      else lm.classList.add('hidden');
+    }
+
+    // ── Notifications from IDB ───────────────────────────────────────────────
+    async function loadNotificationsFromIDB() {
+      const notifs = await CB.getNotifs();
+      const badge = document.getElementById('notif-badge');
+      const unread = notifs.filter(n => !n.read).length;
+      if (unread > 0) { badge.classList.remove('hidden'); badge.textContent = unread > 9 ? '9+' : unread; }
+      else badge.classList.add('hidden');
+
+      const list = document.getElementById('notif-list');
+      if (notifs.length === 0) {
+        list.innerHTML = '<p class="text-center text-gray-500 text-sm py-6">No notifications yet</p>';
+        return;
+      }
+      list.innerHTML = notifs.map(n => `
+        <div class="flex items-start gap-3 p-3 rounded-xl ${n.read ? '' : 'bg-purple-500/5'} hover:bg-white/3 cursor-pointer"
+             onclick="location.href='/post.html?id=${n.related_id}'">
+          <span class="text-lg flex-shrink-0">${n.type === 'new_response' ? '💬' : n.type === 'premium_activated' ? '👑' : '🔔'}</span>
+          <div class="flex-1 min-w-0">
+            <p class="text-sm text-gray-200 ${n.read ? '' : 'font-semibold'}">${n.message}</p>
+            <p class="text-xs text-gray-500 mt-0.5">${timeAgo(n.created_at)}</p>
+          </div>
+          ${!n.read ? '<div class="w-2 h-2 rounded-full bg-purple-400 flex-shrink-0 mt-1.5"></div>' : ''}
+        </div>`).join('');
     }
 
     function toggleNotifPanel() {
@@ -352,7 +372,9 @@
       try {
         await fetch('/api/notifications/read', { method: 'POST', headers: { 'X-User-ID': userId } });
         document.getElementById('notif-badge').classList.add('hidden');
-      } catch (e) {}
+        const notifs = await CB.getNotifs();
+        for (const n of notifs) await CB.markNotifRead(n.id);
+      } catch {}
     }
 
     document.addEventListener('click', (e) => {
@@ -362,18 +384,14 @@
       }
     });
 
-    // ── Subscriptions ─────────────────────────────────────────────────────────
+    // ── Subscriptions ────────────────────────────────────────────────────────
     function updateSubscriptionPills() {
       Object.keys(CHAPTERS).forEach(emotion => {
         const pill = document.getElementById(`pill-${emotion}`);
         if (!pill) return;
         if (userSubscriptions.includes(emotion)) {
           pill.classList.add('subscribed');
-          if (!pill.querySelector('.sub-dot')) {
-            const dot = document.createElement('span');
-            dot.className = 'sub-dot';
-            pill.appendChild(dot);
-          }
+          if (!pill.querySelector('.sub-dot')) { const d = document.createElement('span'); d.className = 'sub-dot'; pill.appendChild(d); }
         } else {
           pill.classList.remove('subscribed');
           const dot = pill.querySelector('.sub-dot');
@@ -389,7 +407,6 @@
       const isSubbed = userSubscriptions.includes(currentFilter);
       document.getElementById('sub-btn-text').textContent = isSubbed ? 'Subscribed ✓' : 'Subscribe';
       document.getElementById('sub-btn').style.color = isSubbed ? '#10b981' : '';
-      lucide.createIcons();
     }
 
     async function toggleSubscription() {
@@ -398,7 +415,7 @@
         const res = await fetch('/api/subscriptions/toggle', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json', 'X-User-ID': userId },
-          body: JSON.stringify({ emotion: currentFilter })
+          body: JSON.stringify({ emotion: currentFilter }),
         });
         const data = await res.json();
         if (data.success) {
@@ -407,42 +424,19 @@
           updateSubscriptionPills();
           updateSubscribeBar();
         }
-      } catch (e) {}
+      } catch {}
     }
 
     // ── Feed ──────────────────────────────────────────────────────────────────
-    async function loadFeed(page = 1, append = false) {
-      if (!append) document.getElementById('feed-container').innerHTML = renderSkeletons(3);
-      try {
-        const res = await fetch(`/api/confidences?chapter=${currentFilter}&page=${page}&pageSize=20`, {
-          headers: { 'X-User-ID': userId }
-        });
-        const data = await res.json();
-        if (!data.success) return;
-
-        const container = document.getElementById('feed-container');
-        if (data.confidences.length === 0 && !append) {
-          container.innerHTML = `
-            <div class="text-center py-16 text-gray-500">
-              <p class="text-4xl mb-3">🌱</p>
-              <p class="font-medium">No confidences yet in this category.</p>
-              <p class="text-sm mt-1">Be the first to share.</p>
-            </div>`;
-          return;
-        }
-
-        const html = data.confidences.map(renderCard).join('');
-        if (append) container.insertAdjacentHTML('beforeend', html);
-        else container.innerHTML = html;
-        lucide.createIcons();
-
-        const lm = document.getElementById('load-more-container');
-        if (data.pagination?.hasMore) { lm.classList.remove('hidden'); currentPage = data.pagination.page; }
-        else lm.classList.add('hidden');
-      } catch (e) {
-        document.getElementById('feed-container').innerHTML = `<p class="text-center text-gray-500 py-8">Loading error. <button onclick="loadFeed()" class="text-purple-400 underline">Retry</button></p>`;
-      }
+    function setFilter(filter) {
+      currentFilter = filter;
+      currentPage = 1;
+      document.querySelectorAll('.filter-pill').forEach(btn => btn.classList.toggle('active', btn.dataset.filter === filter));
+      updateSubscribeBar();
+      renderFeedFromIDB();
     }
+
+    function loadMore() { currentPage++; renderFeedFromIDB(); }
 
     function renderSkeletons(n) {
       return Array(n).fill(0).map(() => `
@@ -461,7 +455,6 @@
       const editCount = conf.edit_count || 0;
       const editsLeft = 3 - editCount;
       const canEdit = isOwner && editsLeft > 0;
-
       return `
         <div class="conf-card fade-in">
           <div class="p-5">
@@ -486,7 +479,7 @@
           ${isOwner ? `
           <div class="border-t border-gray-800 px-5 py-2.5 flex items-center gap-3">
             ${canEdit ? `
-            <button onclick="openEditModal('${conf.id}', ${JSON.stringify(conf.content).replace(/'/g, "\\'")} , '${conf.emotion}', ${editCount})"
+            <button onclick="openEditModal('${conf.id}', ${JSON.stringify(conf.content).replace(/'/g, "\'")} , '${conf.emotion}', ${editCount})"
               class="text-xs text-purple-400 hover:text-purple-300 transition flex items-center gap-1">
               <i data-lucide="edit-3" class="w-3 h-3"></i> Edit
               <span class="text-gray-600">(${editsLeft} left)</span>
@@ -501,24 +494,12 @@
         </div>`;
     }
 
-    function setFilter(filter) {
-      currentFilter = filter;
-      currentPage = 1;
-      document.querySelectorAll('.filter-pill').forEach(btn => btn.classList.toggle('active', btn.dataset.filter === filter));
-      updateSubscribeBar();
-      loadFeed(1, false);
-    }
-
-    function loadMore() { loadFeed(currentPage + 1, true); }
-
     // ── Publish ───────────────────────────────────────────────────────────────
     function openPublishModal() {
-      editingConfidenceId = null;
-      editingEditCount = 0;
+      editingConfidenceId = null; editingEditCount = 0;
       document.getElementById('modal-title').textContent = 'New Confidence';
       document.getElementById('publish-btn').textContent = 'Publish anonymously';
       document.getElementById('conf-content').value = '';
-      document.getElementById('conf-content').placeholder = 'Express yourself freely...';
       document.getElementById('edit-counter').classList.add('hidden');
       hideModerationError();
       document.getElementById('publish-modal').classList.remove('hidden');
@@ -526,15 +507,14 @@
     }
 
     function openEditModal(confId, content, emotion, editCount) {
-      editingConfidenceId = confId;
-      editingEditCount = editCount;
+      editingConfidenceId = confId; editingEditCount = editCount;
       const editsLeft = 3 - editCount;
       document.getElementById('modal-title').textContent = 'Edit Confidence';
       document.getElementById('publish-btn').textContent = 'Save changes';
       document.getElementById('conf-content').value = content;
       document.getElementById('conf-emotion').value = emotion;
       document.getElementById('edit-counter').classList.remove('hidden');
-      document.getElementById('edit-counter-text').textContent = `${editsLeft} edit${editsLeft !== 1 ? 's' : ''} remaining after this`;
+      document.getElementById('edit-counter-text').textContent = `${editsLeft} edit${editsLeft !== 1 ? 's' : ''} remaining`;
       hideModerationError();
       document.getElementById('publishing-state').classList.add('hidden');
       document.getElementById('publish-modal').classList.remove('hidden');
@@ -542,15 +522,13 @@
     }
 
     function openPublishWithPrompt() {
-      const promptText = document.getElementById('prompt-text').textContent;
       openPublishModal();
-      document.getElementById('conf-content').placeholder = promptText;
+      document.getElementById('conf-content').placeholder = document.getElementById('prompt-text').textContent;
     }
 
     function closePublishModal() {
       document.getElementById('publish-modal').classList.add('hidden');
       document.getElementById('conf-content').value = '';
-      document.getElementById('conf-content').placeholder = 'Express yourself freely...';
       document.getElementById('publishing-state').classList.add('hidden');
       document.getElementById('edit-counter').classList.add('hidden');
       hideModerationError();
@@ -559,28 +537,16 @@
 
     function showModerationError(data) {
       document.getElementById('moderation-error').classList.remove('hidden');
-      document.getElementById('mod-reason').textContent = data.reason || 'Content does not meet our community guidelines.';
-
+      document.getElementById('mod-reason').textContent = data.reason || 'Content does not meet community guidelines.';
       const passageWrap = document.getElementById('mod-passage-wrap');
-      if (data.offending_passage) {
-        passageWrap.classList.remove('hidden');
-        document.getElementById('mod-passage').textContent = `"${data.offending_passage}"`;
-      } else {
-        passageWrap.classList.add('hidden');
-      }
-
-      const suggestionWrap = document.getElementById('mod-suggestion-wrap');
-      if (data.suggestion) {
-        suggestionWrap.classList.remove('hidden');
-        document.getElementById('mod-suggestion').textContent = data.suggestion;
-      } else {
-        suggestionWrap.classList.add('hidden');
-      }
+      if (data.offending_passage) { passageWrap.classList.remove('hidden'); document.getElementById('mod-passage').textContent = `"${data.offending_passage}"`; }
+      else passageWrap.classList.add('hidden');
+      const suggWrap = document.getElementById('mod-suggestion-wrap');
+      if (data.suggestion) { suggWrap.classList.remove('hidden'); document.getElementById('mod-suggestion').textContent = data.suggestion; }
+      else suggWrap.classList.add('hidden');
     }
 
-    function hideModerationError() {
-      document.getElementById('moderation-error').classList.add('hidden');
-    }
+    function hideModerationError() { document.getElementById('moderation-error').classList.add('hidden'); }
 
     async function publishConfidence() {
       const content = document.getElementById('conf-content').value.trim();
@@ -588,63 +554,48 @@
       if (content.length < 10) { alert('Write at least a few words.'); return; }
 
       const btn = document.getElementById('publish-btn');
-      btn.disabled = true;
-      btn.textContent = 'Analyzing...';
+      btn.disabled = true; btn.textContent = 'Analyzing...';
       document.getElementById('publishing-state').classList.remove('hidden');
       hideModerationError();
 
       try {
         let res, data;
-
         if (editingConfidenceId) {
-          // Mode édition
           res = await fetch(`/api/confidences/${editingConfidenceId}`, {
             method: 'PUT',
             headers: { 'Content-Type': 'application/json', 'X-User-ID': userId },
-            body: JSON.stringify({ content, emotion })
+            body: JSON.stringify({ content, emotion }),
           });
           data = await res.json();
-
           if (data.success) {
             closePublishModal();
             if (data.warning) document.getElementById('warning-modal').classList.remove('hidden');
-            loadFeed(1, false);
-          } else if (data.limitType === 'edit_limit') {
-            closePublishModal();
-            alert(data.message);
+            await CB.sync(); // Refresh IDB
           } else if (data.limitType === 'moderation') {
             document.getElementById('publishing-state').classList.add('hidden');
             showModerationError(data);
-          } else {
-            alert(data.message || 'Edit error.');
-          }
+          } else { closePublishModal(); alert(data.message || 'Edit error.'); }
         } else {
-          // Mode création
           res = await fetch('/api/confidences', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json', 'X-User-ID': userId },
-            body: JSON.stringify({ content, emotion })
+            body: JSON.stringify({ content, emotion }),
           });
           data = await res.json();
-
           if (data.success) {
             closePublishModal();
             if (data.warning) document.getElementById('warning-modal').classList.remove('hidden');
-            await loadUserData();
-            loadFeed(1, false);
+            await CB.sync();
+            loadUserLimits();
           } else if (data.limitType === 'weekly_post') {
-            closePublishModal();
-            alert(data.message);
+            closePublishModal(); alert(data.message);
           } else if (data.limitType === 'moderation') {
             document.getElementById('publishing-state').classList.add('hidden');
             showModerationError(data);
-          } else {
-            alert(data.message || 'Publishing error.');
-          }
+          } else { alert(data.message || 'Publishing error.'); }
         }
-      } catch (e) {
-        alert('Connection error. Please try again.');
-      } finally {
+      } catch { alert('Connection error. Please try again.'); }
+      finally {
         btn.disabled = false;
         btn.textContent = editingConfidenceId ? 'Save changes' : 'Publish anonymously';
         document.getElementById('publishing-state').classList.add('hidden');
@@ -663,18 +614,18 @@
         await fetch('/api/reactions', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json', 'X-User-ID': userId },
-          body: JSON.stringify({ confidenceId: currentConfidenceId, type })
+          body: JSON.stringify({ confidenceId: currentConfidenceId, type }),
         });
-        loadFeed(1, false);
-      } catch (e) {}
+        await CB.sync();
+      } catch {}
     }
 
     async function deleteConfidence(id) {
       if (!confirm('Delete this confidence?')) return;
       try {
         await fetch(`/api/confidences/${id}`, { method: 'DELETE', headers: { 'X-User-ID': userId } });
-        loadFeed(1, false);
-      } catch (e) {}
+        await CB.deleteConf(id);
+      } catch {}
     }
 
     function escapeHtml(text) { const d = document.createElement('div'); d.textContent = text; return d.innerHTML; }
